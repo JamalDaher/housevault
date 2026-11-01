@@ -161,3 +161,11 @@ export function mostValuableItems(items:Item[],limit=5):{item:Item;total:number;
  const grandTotal=totalValue(items);
  return items.map(item=>({item,total:item.value*item.quantity,share:grandTotal>0?item.value*item.quantity/grandTotal:0})).sort((a,b)=>b.total-a.total||a.item.name.localeCompare(b.item.name)).slice(0,Math.max(0,limit));
 }
+
+/** Export every recorded service event, one row per event. */
+export function serviceHistoryCSV(items:Item[]):string {
+ const escape=(v:string|number)=>'"'+String(v).replaceAll('"','""')+'"';
+ const rows:[string,string,string,string,string,string,string,string][]=[["Equipment","Location","Category","Date","Task","Cost","Notes","Record ID"]];
+ for(const item of items)for(const record of item.serviceHistory??[])rows.push([item.name,item.location,item.category,record.date,record.task,String(record.cost),record.notes,record.id]);
+ return rows.map(row=>row.map(escape).join(",")).join("\r\n");
+}
