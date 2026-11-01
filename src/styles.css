@@ -12,3 +12,5 @@
 .location-summary-panel{margin-bottom:24px}
 
 .warranty-panel{margin-bottom:24px}
+
+.service-cost-panel{margin-bottom:24px}.service-cost-panel .panel-heading>strong{font-size:20px;white-space:nowrap}@media(max-width:680px){.service-cost-panel .panel-heading{flex-wrap:wrap}}

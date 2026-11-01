@@ -143,3 +143,7 @@ export function warrantyQueue(items:Item[],today=new Date().toISOString().slice(
  const rank={expired:0,expiring:1,active:2,unknown:3};
  return items.filter(i=>["expired","expiring"].includes(warrantyStatus(i,today))).sort((a,b)=>rank[warrantyStatus(a,today)]-rank[warrantyStatus(b,today)]||(a.warrantyEnd??"").localeCompare(b.warrantyEnd??"")||a.name.localeCompare(b.name));
 }
+
+export function serviceCostSummary(items:Item[]):{id:string;name:string;location:string;cost:number;services:number}[] {
+ return items.map(i=>({id:i.id,name:i.name,location:i.location,cost:(i.serviceHistory??[]).reduce((sum,r)=>sum+r.cost,0),services:i.serviceHistory?.length??0})).filter(i=>i.services>0).sort((a,b)=>b.cost-a.cost||a.name.localeCompare(b.name));
+}
