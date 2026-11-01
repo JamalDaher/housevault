@@ -169,3 +169,11 @@ export function serviceHistoryCSV(items:Item[]):string {
  for(const item of items)for(const record of item.serviceHistory??[])rows.push([item.name,item.location,item.category,record.date,record.task,String(record.cost),record.notes,record.id]);
  return rows.map(row=>row.map(escape).join(",")).join("\r\n");
 }
+
+/** Export warranty coverage for all inventory records, including unknown dates. */
+export function warrantyCSV(items:Item[],today=new Date().toISOString().slice(0,10)):string {
+ const escape=(value:string|number)=>'"'+String(value).replaceAll('"','""')+'"';
+ const rows=[["Equipment","Brand","Model","Serial Number","Category","Location","Purchase Date","Warranty End","Status"]];
+ for(const item of items)rows.push([item.name,item.brand??"",item.model??"",item.serialNumber??"",item.category,item.location,item.purchaseDate??"",item.warrantyEnd??"",warrantyStatus(item,today)]);
+ return rows.map(row=>row.map(escape).join(",")).join("\r\n");
+}
