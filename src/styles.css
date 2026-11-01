@@ -326,3 +326,10 @@ button:focus-visible,summary:focus-visible{outline:3px solid #0e968a;outline-off
 .inventory-location-details>summary span{font-size:12px;color:#75859a;font-weight:400;margin-left:auto}
 .inventory-location-details>.panel-heading{padding-top:0}
 @media(max-width:680px){.inventory-search-row{padding:0 16px 16px}.inventory-search-row>.search{flex:1 1 100%}.inventory-search-row>.secondary{flex:1 1 auto}.inventory-advanced-filters{padding:0 16px 16px}.inventory-location-details>summary{padding:18px 16px}.inventory-location-details>summary span{display:none}}
+
+/* Compact mobile Overview: one action strip, then key statistics. */
+main:has(.quick-actions:not([hidden]))>header{margin-bottom:12px}
+main:has(.quick-actions:not([hidden]))>header h1{font-size:clamp(24px,5vw,30px);margin:0}
+.quick-actions{background:transparent;border:0;box-shadow:none;padding:0;margin:0 0 18px;gap:9px}
+.quick-actions>.quick-action{flex:1 1 150px;min-height:46px}
+@media(max-width:680px){.quick-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.quick-actions>.quick-action{min-width:0;min-height:52px;padding:9px 5px;flex-direction:column;gap:4px;font-size:11px;line-height:1.2;white-space:normal;text-align:center}.quick-actions>.quick-action svg{width:18px;height:18px}main:has(.quick-actions:not([hidden]))>header{margin-bottom:14px}main:has(.quick-actions:not([hidden]))>.stats{margin-top:0}}
