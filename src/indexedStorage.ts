@@ -43,7 +43,10 @@ export async function loadInventory():Promise<Item[]>{
   return migrated;
  }finally{db.close();}
 }
-export async function saveInventory(items:Item[]):Promise<void>{
- const db=await openDatabase();
- try{await write(db,items);}finally{db.close();}
+let pending:Promise<void>=Promise.resolve();
+export function saveInventory(items:Item[]):Promise<void>{
+ const snapshot=structuredClone(items);
+ const next=pending.catch(()=>undefined).then(async()=>{const db=await openDatabase();try{await write(db,snapshot);}finally{db.close();}});
+ pending=next;
+ return next;
 }
