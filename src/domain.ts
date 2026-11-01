@@ -106,3 +106,23 @@ export function sortInventory(items:Item[],sort:InventorySort):Item[] {
   return byName(a,b);
  });
 }
+
+export function parseInventoryCSV(raw:string):Omit<Item,"id">[] {
+ const rows:string[][]=[];let row:string[]=[],cell="",quoted=false;
+ const source=raw.replace(/^\uFEFF/,"");
+ for(let i=0;i<source.length;i++){const c=source[i];if(quoted){if(c==='"'&&source[i+1]==='"'){cell+='"';i++;}else if(c==='"')quoted=false;else cell+=c;}else if(c==='"'){if(cell)throw new Error("Malformed CSV quoting.");quoted=true;}else if(c===","){row.push(cell);cell="";}else if(c==="\n"||c==="\r"){if(c==="\r"&&source[i+1]==="\n")i++;row.push(cell);if(row.some(v=>v.trim()))rows.push(row);row=[];cell="";}else cell+=c;}
+ if(quoted)throw new Error("Unclosed CSV quote.");row.push(cell);if(row.some(v=>v.trim()))rows.push(row);
+ if(!rows.length)throw new Error("CSV is empty.");
+ const header=rows.shift()!.map(x=>x.trim().toLowerCase());
+ const required=["name","category","location","quantity","unit value","notes"];
+ if(header.length!==required.length||required.some((v,i)=>header[i]!==v))throw new Error("CSV headers must be Name, Category, Location, Quantity, Unit Value, Notes.");
+ if(rows.length>10000)throw new Error("CSV contains too many items.");
+ return rows.map((r,index)=>{if(r.length!==6)throw new Error(`Row ${index+2} has the wrong number of columns.`);
+ const [name,category,location,quantity,value,notes]=r;
+ const item={name:name.trim(),category:category.trim() as Category,location:normalizeLocation(location),quantity:Number(quantity),value:Number(value),notes};
+ if(!categories.includes(item.category)||!quantity.trim()||!value.trim()||!validItem({...item,id:"csv-preview"}))throw new Error(`Invalid inventory data on row ${index+2}.`);
+ return item;});
+}
+export function inventoryDuplicateKey(item:Pick<Item,"name"|"category"|"location">):string {
+ return [item.name.trim().toLowerCase(),item.category.toLowerCase(),normalizeLocation(item.location).toLowerCase()].join("|");
+}
