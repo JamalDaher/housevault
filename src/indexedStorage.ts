@@ -62,9 +62,8 @@ export async function inspectAttachmentStorage():Promise<AttachmentStorageStats>
   if(records!==undefined&&!Array.isArray(records))throw new Error("Invalid inventory metadata");
   const referenced=referencedKeys(records??[]);
   const tx=db.transaction(ASSETS,"readonly");const store=tx.objectStore(ASSETS);
-  const keys=await requestResult(store.getAllKeys());
-  let estimatedBytes=0;
-  for(const key of keys){const value=await requestResult(store.get(key));if(typeof value==="string")estimatedBytes+=Math.floor(value.length*3/4);}
+  const [keys,values]=await Promise.all([requestResult(store.getAllKeys()),requestResult(store.getAll())]);
+  const estimatedBytes=values.reduce<number>((total,value:unknown)=>total+(typeof value==="string"?Math.floor(value.length*3/4):0),0);
   return {stored:keys.length,referenced:referenced.size,orphaned:keys.filter(key=>typeof key==="string"&&!referenced.has(key)).length,estimatedBytes};
  }finally{db.close();}
 }
