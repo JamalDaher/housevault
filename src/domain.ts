@@ -185,3 +185,10 @@ export function maintenanceScheduleCSV(items:Item[],today=new Date().toISOString
  for(const item of items){const due=nextServiceDate(item);if(!due)continue;rows.push([item.name,item.category,item.location,item.maintenanceTask??"",item.lastService??"",String(item.serviceIntervalDays??""),due,maintenanceStatus(item,today)]);}
  return rows.map(row=>row.map(escape).join(",")).join("\r\n");
 }
+
+/** Group all dated maintenance tasks by due month, ordered chronologically. */
+export function maintenanceCalendar(items:Item[]):{month:string;entries:{item:Item;due:string}[]}[] {
+ const months=new Map<string,{item:Item;due:string}[]>();
+ for(const item of items){const due=nextServiceDate(item);if(!due)continue;const month=due.slice(0,7);const entries=months.get(month)??[];entries.push({item,due});months.set(month,entries);}
+ return [...months.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([month,entries])=>({month,entries:entries.sort((a,b)=>a.due.localeCompare(b.due)||a.item.name.localeCompare(b.item.name))}));
+}
