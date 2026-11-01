@@ -49,3 +49,10 @@ describe("equipment documents",()=>{
  it("rejects invalid attachment types in backups",()=>{const backup=JSON.parse(exportBackup(seed));backup.items[0].documents=[{id:"bad",name:"script",type:"text/html",data:"data:text/html;base64,PGgxPg=="}];expect(()=>parseBackup(JSON.stringify(backup))).toThrow("Invalid equipment documents.");});
  it("rejects excessive attachment counts",()=>{const backup=JSON.parse(exportBackup(seed));backup.items[0].documents=Array.from({length:16},(_,i)=>({id:String(i),name:"receipt.pdf",type:"application/pdf",data:"data:application/pdf;base64,JVBERi0x"}));expect(()=>parseBackup(JSON.stringify(backup))).toThrow("Invalid equipment documents.");});
 });
+
+test("inventory search matches custom field names and values",()=>{
+ const item={...seed[0],customFields:[{id:"field-1",label:"Asset tag",value:"HV-TEST-123"}]};
+ expect(filterItems([item],"HV-TEST-123","All")).toHaveLength(1);
+ expect(filterItems([item],"Asset tag","All")).toHaveLength(1);
+ expect(filterItems([item],"not-present","All")).toHaveLength(0);
+});
