@@ -46,7 +46,7 @@ export function parseBackup(raw: string): Item[] {
   const i=entry as Record<string,unknown>;
   if(typeof i.id!=="string"||!i.id.trim()||ids.has(i.id)||typeof i.name!=="string"||typeof i.location!=="string"||typeof i.notes!=="string"||typeof i.category!=="string"||!categories.includes(i.category as Category)||typeof i.quantity!=="number"||typeof i.value!=="number")throw new Error("Backup contains invalid or duplicate records.");
   for(const field of ["brand","model","serialNumber","purchaseDate","warrantyEnd"])if(i[field]!==undefined&&typeof i[field]!=="string")throw new Error("Invalid optional item field.");
-  const item=i as Item;
+  const item=i as unknown as Item;
   if(!validItem(item))throw new Error("Backup contains invalid inventory values.");
   ids.add(item.id);return item;
  });
