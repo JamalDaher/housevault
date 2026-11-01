@@ -262,3 +262,8 @@ tbody tr:hover{background:#f8fbfe}
  body:has(.qr-label-dialog) .qr-label-dialog>.dialog-title,body:has(.qr-label-dialog) .qr-label-dialog>.dialog-actions,body:has(.qr-label-dialog) .qr-label-note{display:none!important}
  body:has(.qr-label-dialog) .qr-label-print{width:3.5in;min-height:3.5in;border:1px dashed #999;break-inside:avoid}
 }
+
+/* Camera scanner: above sticky navigation and usable on iPhone. */
+.equipment-scanner-dialog{width:min(100%,480px);max-height:calc(100dvh - 36px);overflow-y:auto}
+.equipment-scanner-video{width:100%;min-height:230px;overflow:hidden;border-radius:12px;background:#0f172a}
+.equipment-scanner-video video{max-width:100%;object-fit:cover}
