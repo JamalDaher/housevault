@@ -64,7 +64,7 @@ export function warrantyStatus(item: Item, today = new Date().toISOString().slic
  return days<=30?"expiring":"active";
 }
 
-export type MaintenanceStatus = "unscheduled" | "upcoming" | "due" | "overdue";
+export type MaintenanceStatus = "unscheduled" | "scheduled" | "upcoming" | "due" | "overdue";
 export function nextServiceDate(item: Item): string | null {
  if(!item.lastService||!/^\d{4}-\d{2}-\d{2}$/.test(item.lastService)||!Number.isInteger(item.serviceIntervalDays)||!(typeof item.serviceIntervalDays==="number"&&item.serviceIntervalDays>0))return null;
  const start=new Date(item.lastService+"T00:00:00Z");
@@ -76,7 +76,7 @@ export function maintenanceStatus(item: Item,today=new Date().toISOString().slic
  const due=nextServiceDate(item);if(!due)return "unscheduled";
  if(due<today)return "overdue";
  const days=Math.round((Date.parse(due+"T00:00:00Z")-Date.parse(today+"T00:00:00Z"))/86400000);
- return days===0?"due":days<=30?"upcoming":"unscheduled";
+ return days===0?"due":days<=30?"upcoming":"scheduled";
 }
 
 export function validDate(value:string):boolean {
@@ -91,8 +91,8 @@ export function recordService(item:Item,record:ServiceRecord):Item {
 }
 
 export function maintenanceQueue(items:Item[],today=new Date().toISOString().slice(0,10)):Item[] {
- const rank={overdue:0,due:1,upcoming:2,unscheduled:3};
- return items.filter(i=>maintenanceStatus(i,today)!=="unscheduled").sort((a,b)=>rank[maintenanceStatus(a,today)]-rank[maintenanceStatus(b,today)]||(nextServiceDate(a)??"").localeCompare(nextServiceDate(b)??"")||a.name.localeCompare(b.name));
+ const rank={overdue:0,due:1,upcoming:2,scheduled:3,unscheduled:4};
+ return items.filter(i=>["overdue","due","upcoming"].includes(maintenanceStatus(i,today))).sort((a,b)=>rank[maintenanceStatus(a,today)]-rank[maintenanceStatus(b,today)]||(nextServiceDate(a)??"").localeCompare(nextServiceDate(b)??"")||a.name.localeCompare(b.name));
 }
 
 export type InventorySort = "name" | "value-high" | "value-low" | "quantity-high" | "warranty-soon";
