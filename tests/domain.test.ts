@@ -1,5 +1,5 @@
 import { describe,it,expect } from "vitest";
-import { categorySummary,locationSummary,serviceCostSummary,csvExport,csvTemplate,parseInventoryCSV,inventoryDuplicateKey,exportBackup,parseBackup,filterItems,totalValue,validItem,seed,locationPaths,normalizeLocation,locationTree,itemsAtLocation,warrantyStatus,warrantyQueue,maintenanceStatus,maintenanceQueue,sortInventory,nextServiceDate,recordService } from "../src/domain";
+import { categorySummary,locationSummary,serviceCostSummary,incompleteInventory,missingItemDetails,csvExport,csvTemplate,parseInventoryCSV,inventoryDuplicateKey,exportBackup,parseBackup,filterItems,totalValue,validItem,seed,locationPaths,normalizeLocation,locationTree,itemsAtLocation,warrantyStatus,warrantyQueue,maintenanceStatus,maintenanceQueue,sortInventory,nextServiceDate,recordService } from "../src/domain";
 describe("inventory domain",()=>{
 it("totals quantities correctly",()=>expect(totalValue([{...seed[0],quantity:2,value:100}])).toBe(200));
 it("filters by location and category",()=>expect(filterItems(seed,"workshop","Tools")).toHaveLength(1));
@@ -28,5 +28,6 @@ it("summarizes categories with quantity-adjusted values",()=>{const result=categ
 it("summarizes top-level locations including descendants",()=>{const items=[{...seed[0],location:"House / Garage",quantity:2,value:100},{...seed[1],location:"House / Kitchen",value:50},{...seed[2],location:"Shed",value:25}];expect(locationSummary(items)).toEqual([{location:"House",records:2,quantity:3,value:250},{location:"Shed",records:1,quantity:1,value:25}]);});
 it("prioritizes expired then expiring warranties",()=>{const items=[{...seed[0],warrantyEnd:"2026-11-20"},{...seed[1],warrantyEnd:"2026-10-01"},{...seed[2],warrantyEnd:"2027-04-01"}];expect(warrantyQueue(items,"2026-11-01").map(i=>i.id)).toEqual([seed[1].id,seed[0].id]);});
 it("totals service costs per item and sorts by spending",()=>{const items=[{...seed[0],serviceHistory:[{id:"a",date:"2026-01-01",task:"Service",notes:"",cost:10},{id:"b",date:"2026-02-01",task:"Service",notes:"",cost:20}]},{...seed[1],serviceHistory:[{id:"c",date:"2026-03-01",task:"Service",notes:"",cost:50}]},seed[2]];expect(serviceCostSummary(items).map(i=>[i.id,i.cost,i.services])).toEqual([[seed[1].id,50,1],[seed[0].id,30,2]]);});
+it("identifies missing optional equipment details",()=>{expect(missingItemDetails(seed[0])).toEqual(["Brand","Model","Serial number","Purchase date","Warranty date"]);expect(missingItemDetails({...seed[0],brand:"Acme",model:"GX",serialNumber:"123",purchaseDate:"2026-01-01",warrantyEnd:"2027-01-01"})).toEqual([]);expect(incompleteInventory([seed[0],{...seed[1],brand:"Acme"}]).map(x=>x.item.id)).toEqual([seed[0].id,seed[1].id]);});
 it("handles empty lists",()=>expect(totalValue([])).toBe(0));
 });
