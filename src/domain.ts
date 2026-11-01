@@ -64,7 +64,7 @@ export function warrantyStatus(item: Item, today = new Date().toISOString().slic
 
 export type MaintenanceStatus = "unscheduled" | "upcoming" | "due" | "overdue";
 export function nextServiceDate(item: Item): string | null {
- if(!item.lastService||!/^\d{4}-\d{2}-\d{2}$/.test(item.lastService)||!Number.isInteger(item.serviceIntervalDays)||!(item.serviceIntervalDays!>0))return null;
+ if(!item.lastService||!/^\d{4}-\d{2}-\d{2}$/.test(item.lastService)||!Number.isInteger(item.serviceIntervalDays)||!(typeof item.serviceIntervalDays==="number"&&item.serviceIntervalDays>0))return null;
  const start=new Date(item.lastService+"T00:00:00Z");
  if(Number.isNaN(start.getTime())||start.toISOString().slice(0,10)!==item.lastService)return null;
  start.setUTCDate(start.getUTCDate()+item.serviceIntervalDays!);
