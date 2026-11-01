@@ -97,3 +97,7 @@ HouseVault is an evolving portfolio project. Suggestions and bug reports are wel
 ### Printable equipment QR labels
 
 Open an equipment record, choose **QR label**, then **Print label**. The QR is generated on your device, without a third-party QR service. It encodes the HouseVault URL and an opaque equipment ID, **not** the item's serial number or documents. Scan with your iPhone camera to open that record. Because HouseVault does not sync data between devices, a scan on a different phone may show a missing-record warning until that device has the matching inventory restored from a backup. Labels require the deployed HouseVault URL to remain accessible; offline scanning depends on the PWA being installed and cached.
+
+### Scan QR codes inside the installed app
+
+In the **Inventory** view, tap **Scan QR** to open the built-in camera scanner. Allow camera permission when prompted, then point your iPhone at a HouseVault equipment label. The matching local record opens inside HouseVault, avoiding Safari's separate storage context. A QR code cannot retrieve inventory stored only on another device. Camera access requires HTTPS and permission; you can close the scanner at any time.
