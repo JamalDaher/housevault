@@ -213,3 +213,14 @@ tbody tr:hover{background:#f8fbfe}
 .saved-filters-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 0}.saved-filters-toolbar select{min-width:160px;max-width:230px;padding:9px;border-radius:8px}.saved-filters-toolbar details{position:relative}.saved-filters-toolbar summary{cursor:pointer}.saved-filters-toolbar small{flex-basis:100%;opacity:.7}.saved-filter-list{display:grid;gap:8px;max-height:220px;overflow:auto;padding:10px;border:1px solid var(--border,#344052);border-radius:10px}.saved-filter-list>div{display:flex;justify-content:space-between;align-items:center;gap:12px}@media(max-width:640px){.saved-filters-toolbar select{flex:1 1 150px;max-width:none}}
 
 .maintenance-checklist-editor,.maintenance-checklist{display:grid;gap:10px;padding:14px;border:1px solid var(--border,#344052);border-radius:12px;margin:12px 0}.maintenance-step-editor{display:flex;gap:8px}.maintenance-step-editor input{flex:1;min-width:0}.maintenance-checklist label{display:flex;gap:10px;align-items:center}.maintenance-checklist p{margin:0;opacity:.8;font-size:.88rem}
+
+
+/* iPhone standalone PWA: keep long equipment forms anchored at the top of the visible viewport.
+   The overlay itself scrolls, so the modal heading and close button remain reachable. */
+.overlay{box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;align-items:safe center;min-height:0}
+.overlay>.dialog{flex-shrink:0;max-height:min(95dvh,calc(100dvh - 32px));overscroll-behavior:contain}
+@media(max-width:680px){
+ .overlay{align-items:flex-start;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px));}
+ .overlay>.dialog{width:100%;max-width:100%;max-height:calc(100dvh - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));margin:0;min-height:0}
+ .overlay>.dialog>.dialog-title{position:sticky;top:-26px;z-index:2;background:#fff;padding:10px 0;border-bottom:1px solid #e5eaf1}
+}
