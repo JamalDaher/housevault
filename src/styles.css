@@ -3,3 +3,4 @@
 .backup-actions{display:flex;flex-wrap:wrap;gap:8px}.restore-button{cursor:pointer}.restore-button input{display:none}@media(max-width:680px){.backup-actions{width:100%}.backup-actions .secondary{flex:1}}
 
 .warranty{display:inline-block;padding:5px 9px;border-radius:7px;font-size:11px;font-weight:700}.warranty-active{background:#e5f7ef;color:#176647}.warranty-expiring{background:#fff2d6;color:#835800}.warranty-expired{background:#fce9e9;color:#9a3131}.warranty-unknown{background:#edf1f6;color:#6a7788}@media(max-width:680px){.toolbar select{flex:1;min-width:130px}}
+.service-records{max-height:180px;overflow:auto;border:1px solid #e3e9f0;border-radius:8px;padding:12px}.service-records>div{padding:8px 0;border-bottom:1px solid #edf1f6}.service-records p{font-size:12px;color:#718198;margin:5px 0}
