@@ -129,3 +129,7 @@ export function inventoryDuplicateKey(item:Pick<Item,"name"|"category"|"location
 
 /** Blank template using the same headers accepted by CSV import. */
 export function csvTemplate():string {return csvExport([])+"\r\n";}
+
+export function categorySummary(items:Item[]):{category:Category;records:number;quantity:number;value:number}[] {
+ return categories.map(category=>{const matching=items.filter(i=>i.category===category);return {category,records:matching.length,quantity:matching.reduce((sum,i)=>sum+i.quantity,0),value:totalValue(matching)};}).filter(group=>group.records>0);
+}

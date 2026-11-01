@@ -1,5 +1,5 @@
 import { describe,it,expect } from "vitest";
-import { csvExport,csvTemplate,parseInventoryCSV,inventoryDuplicateKey,exportBackup,parseBackup,filterItems,totalValue,validItem,seed,locationPaths,normalizeLocation,locationTree,itemsAtLocation,warrantyStatus,maintenanceStatus,maintenanceQueue,sortInventory,nextServiceDate,recordService } from "../src/domain";
+import { categorySummary,csvExport,csvTemplate,parseInventoryCSV,inventoryDuplicateKey,exportBackup,parseBackup,filterItems,totalValue,validItem,seed,locationPaths,normalizeLocation,locationTree,itemsAtLocation,warrantyStatus,maintenanceStatus,maintenanceQueue,sortInventory,nextServiceDate,recordService } from "../src/domain";
 describe("inventory domain",()=>{
 it("totals quantities correctly",()=>expect(totalValue([{...seed[0],quantity:2,value:100}])).toBe(200));
 it("filters by location and category",()=>expect(filterItems(seed,"workshop","Tools")).toHaveLength(1));
@@ -24,5 +24,6 @@ it("imports quoted CSV with commas and escaped quotes",()=>{const csv=csvExport(
 it("rejects invalid CSV quantities",()=>expect(()=>parseInventoryCSV('Name,Category,Location,Quantity,Unit Value,Notes\\nA,Tools,Garage,0,100,test')).toThrow());
 it("normalizes duplicate keys",()=>expect(inventoryDuplicateKey({...seed[0],name:" DRILL ",location:" House / Garage " })).toBe(inventoryDuplicateKey({...seed[0],name:"drill",location:"House/Garage"})));
 it("generates a header-only CSV template",()=>{expect(csvTemplate().trim()).toBe(csvExport([]));expect(parseInventoryCSV(csvTemplate())).toEqual([]);});
+it("summarizes categories with quantity-adjusted values",()=>{const result=categorySummary([{...seed[0],quantity:2,value:100},seed[1]]);expect(result).toEqual([{category:"Tools",records:2,quantity:3,value:340}]);});
 it("handles empty lists",()=>expect(totalValue([])).toBe(0));
 });
