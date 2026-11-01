@@ -1,5 +1,5 @@
 import { describe,it,expect } from "vitest";
-import { csvExport,exportBackup,parseBackup,filterItems,totalValue,validItem,seed,locationPaths,normalizeLocation,locationTree,itemsAtLocation } from "../src/domain";
+import { csvExport,exportBackup,parseBackup,filterItems,totalValue,validItem,seed,locationPaths,normalizeLocation,locationTree,itemsAtLocation,warrantyStatus } from "../src/domain";
 describe("inventory domain",()=>{
 it("totals quantities correctly",()=>expect(totalValue([{...seed[0],quantity:2,value:100}])).toBe(200));
 it("filters by location and category",()=>expect(filterItems(seed,"workshop","Tools")).toHaveLength(1));
@@ -12,5 +12,6 @@ it("matches exact location and descendants only",()=>expect(itemsAtLocation([{..
 it("round-trips a JSON backup",()=>expect(parseBackup(exportBackup(seed))).toEqual(seed));
 it("rejects malformed backup",()=>expect(()=>parseBackup('{"items":[]}')).toThrow());
 it("rejects duplicate item IDs",()=>expect(()=>parseBackup(exportBackup([seed[0],seed[0]]))).toThrow());
+it("classifies warranty dates",()=>{const today="2026-11-01";expect(warrantyStatus(seed[0],today)).toBe("unknown");expect(warrantyStatus({...seed[0],warrantyEnd:"2026-10-31"},today)).toBe("expired");expect(warrantyStatus({...seed[0],warrantyEnd:"2026-11-30"},today)).toBe("expiring");expect(warrantyStatus({...seed[0],warrantyEnd:"2026-12-02"},today)).toBe("active");});
 it("handles empty lists",()=>expect(totalValue([])).toBe(0));
 });
