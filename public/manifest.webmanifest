@@ -1,0 +1,19 @@
+{
+  "id": "/housevault/",
+  "name": "HouseVault — Home Inventory",
+  "short_name": "HouseVault",
+  "description": "Local-first home and equipment inventory",
+  "start_url": "/housevault/",
+  "scope": "/housevault/",
+  "display": "standalone",
+  "background_color": "#101b30",
+  "theme_color": "#101b30",
+  "icons": [
+    {
+      "src": "/housevault/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
