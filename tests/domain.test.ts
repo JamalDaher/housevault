@@ -3,6 +3,7 @@ import { csvExport,exportBackup,parseBackup,filterItems,totalValue,validItem,see
 describe("inventory domain",()=>{
 it("totals quantities correctly",()=>expect(totalValue([{...seed[0],quantity:2,value:100}])).toBe(200));
 it("filters by location and category",()=>expect(filterItems(seed,"workshop","Tools")).toHaveLength(1));
+it("searches brand model serial and maintenance task",()=>{const i={...seed[0],brand:"Acme",model:"GX-20",serialNumber:"ABC-123",maintenanceTask:"Oil change"};for(const q of ["acme","gx-20","abc-123","oil change"])expect(filterItems([i],q,"All")).toHaveLength(1);});
 it("rejects negative values",()=>expect(validItem({...seed[0],value:-1})).toBe(false));
 it("escapes CSV content",()=>expect(csvExport([{...seed[0],name:'a"b'}])).toContain('"a""b"'));
 it("normalizes hierarchical location paths",()=>expect(normalizeLocation(" House / Garage / Shelf 2 ")).toBe("House / Garage / Shelf 2"));
