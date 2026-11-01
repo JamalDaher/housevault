@@ -1,37 +1,61 @@
 # HouseVault
 
-**A local-first home inventory and equipment maintenance dashboard.**
+**A local-first home inventory, asset documentation, and equipment maintenance app.**
 
-[**Open the live demo**](https://jamaldaher.github.io/housevault/) · [Source code](https://github.com/JamalDaher/housevault)
+[**Launch HouseVault**](https://jamaldaher.github.io/housevault/) · [GitHub repository](https://github.com/JamalDaher/housevault) · [Report an issue](https://github.com/JamalDaher/housevault/issues)
 
-HouseVault helps you organize household equipment, track estimated replacement value, monitor warranties, and plan recurring maintenance. Built with React, TypeScript, and Vite as a portfolio project and a possible future module of Daher HomeOS.
+HouseVault is an installable, offline-capable progressive web app (PWA) built with React, TypeScript, and Vite. Organize household assets, workshop tools, appliances, vehicles, and outdoor equipment in one searchable inventory. The hosted demo starts with **fictional sample items**.
 
-> **Important:** HouseVault currently stores data in your browser's local storage. It is not a hosted account, encrypted vault, or cross-device synchronization service. The demo starts with fictional sample equipment; do not put private serial numbers or sensitive documents in a shared browser.
+> **Your data stays on your device.** HouseVault uses browser IndexedDB, not an online account. It does not automatically sync between devices or back up to the cloud. Export JSON backups regularly, especially before switching browsers or installing the iPhone Home Screen app.
 
 ## Features
 
-| Area | Capabilities |
+| Area | What HouseVault supports |
 | --- | --- |
-| Inventory | Add, edit, and delete items; track category, location, quantity, unit value, brand, model, serial number, purchase date, warranty end, and notes |
-| Organization | Nested location paths and location browser; search and filters for category, warranty, and maintenance; inventory sorting |
-| Dashboard | Quantity-adjusted total value, category and location summaries, most valuable equipment, and missing-detail checklist |
-| Warranties | Active, expiring, expired, or unknown coverage; attention list for expired and soon-to-expire warranties |
-| Maintenance | Service task, last service date, recurring interval, calculated next service date, status, prioritized attention queue, and monthly maintenance calendar |
-| Service history | Log completed maintenance with date, notes, and cost; review cumulative spending by equipment |
-| Import/export | Validated CSV inventory import with preview and duplicate checks; blank CSV template; inventory, warranty, maintenance schedule, and service history CSV exports |
-| Reports and backups | Printable inventory report (including Save as PDF through the browser); versioned JSON backup and restore |
+| Inventory | Add, edit, duplicate, and delete records; quantity and value; category, nested location, brand, model, serial number, purchase and warranty dates, notes, and custom fields |
+| Photos & documents | Up to six equipment photos per item with cover selection and viewer; up to 15 attached receipts/manuals/documents per item, 10 MB each; in-app document previews |
+| Browse & organize | Table and gallery views, location browser, advanced search (including custom fields), sorting, saved filters, and bulk location/category changes or deletion |
+| Dashboard | Inventory value, category and location summaries, highest-value assets, incomplete records, warranty attention, and maintenance status |
+| Maintenance | Recurring service intervals, calculated due dates, overdue/upcoming alerts with 7/14/30-day windows, checklists, service history, costs, and monthly calendar |
+| Calendar export | Download maintenance events as an `.ics` file for import into a calendar; **one-time export, not live sync** |
+| Warranties | Active, expiring, expired, and unknown warranty status with attention lists |
+| Reports | Printable inventory report, inventory CSV, warranty CSV, maintenance schedule CSV, and service history CSV |
+| Import & backup | CSV import with preview and duplicate checks, downloadable CSV template, versioned JSON backup and restore |
+| Offline PWA | Add to iPhone Home Screen, launch in standalone mode, and reopen the app offline after first loading it online |
+| Device storage | IndexedDB inventory with separate attachment storage, automatic orphan attachment cleanup, and storage usage inspection |
 
-**Maintenance status definitions:** Overdue = before today; Due = today; Upcoming = within the next 30 days; Scheduled = more than 30 days away; Unscheduled = no valid calculated due date. The attention queue shows overdue, due, and upcoming tasks; the calendar and schedule CSV include future scheduled work.
+## Install on iPhone
 
-## Getting started
+1. Open [HouseVault](https://jamaldaher.github.io/housevault/) in **Safari** while online.
+2. **Before installing**, export a **JSON backup** and save it to Files.
+3. Tap **Share → Add to Home Screen → Add**. Enable **Open as Web App** if iOS offers the option.
+4. Launch HouseVault from the new Home Screen icon.
+5. Check your inventory. If the installed app has separate storage from Safari, **restore your JSON backup inside the installed app**.
+6. Once the app has loaded online, you can test offline access using Airplane Mode.
 
-### Try the hosted demo
+**Important:** Do not uninstall the app, clear website data, or delete your Safari inventory until you have verified a complete backup and restored records and attachments. iOS may isolate Safari and installed-app storage. A PWA is not a native App Store app, and background push notifications, cloud sync, and live calendar subscriptions are not implemented.
 
-Open **https://jamaldaher.github.io/housevault/**. Data you enter stays in that browser's local storage; it is not synchronized with another browser or device.
+### App updates and offline use
 
-### Run locally
+HouseVault caches its public application shell for offline access. When online, the service worker checks for updates and refreshes static assets, with cached assets as an offline fallback. After an update is deployed, reopen the app while connected to the internet; another reopen may be needed for the new version to take control. **Inventory, photos, and documents are stored in IndexedDB, not in the service worker cache.**
 
-Prerequisites: a recent Node.js LTS release and npm.
+## Common workflows
+
+**Add an item:** Go to **Inventory → Add Item**. Attach photos, enter the item name, category, nested location (for example `House / Garage / Shelf`), value, and optional specifications. The mobile editor scrolls as one form; its heading scrolls away naturally.
+
+**Manage equipment:** Open an item for its photo gallery, specifications, custom fields, receipts, warranty information, maintenance schedule, and service history. Duplicate a record to reuse its descriptive fields without copying the serial number, service history, or attachments.
+
+**Plan maintenance:** Enter a maintenance task, last-service date, and service interval in days. Add checklist steps if needed. Use the Maintenance view to see due/overdue tasks, change the alert window, log completed work and costs, or export an `.ics` calendar snapshot.
+
+**Organize records:** Search names, brands, models, serial numbers, maintenance tasks, and custom fields. Save frequently used filter combinations. Select records for bulk category changes, moves, or deletion.
+
+**Import or export:** Use the CSV template and preview importer for tabular inventory data. Export CSVs for reporting. Use **Backup JSON** for a more complete backup, including supported photos and attachments.
+
+**Restore carefully:** Restoring a JSON backup replaces the current inventory after confirmation. Back up your current records first.
+
+## Local development
+
+Requires a current Node.js LTS release and npm.
 
 ```bash
 git clone https://github.com/JamalDaher/housevault.git
@@ -40,9 +64,7 @@ npm install
 npm run dev
 ```
 
-Open the local URL printed by Vite.
-
-### Quality checks
+Quality checks:
 
 ```bash
 npm run lint
@@ -50,55 +72,23 @@ npm test
 npm run build
 ```
 
-The project uses Vitest for domain tests, ESLint, TypeScript checks, and GitHub Actions CI.
+The project uses React 19, TypeScript, Vite, Lucide icons, Vitest, ESLint, and GitHub Actions CI. The production site is deployed to GitHub Pages from the `main` branch.
 
-## Common workflows
+## Data, privacy, and limitations
 
-**Add equipment:** Create an inventory record, choose its category and location, and optionally add purchase, warranty, and service details. Nested locations use paths such as `House / Garage / Shelf`.
-
-**Import a spreadsheet:** Download the CSV template, fill it in, and use **Import CSV** to review records and duplicate warnings before importing. Existing records should be backed up first.
-
-**Track maintenance:** Enter a last-service date and interval (in days) for an item. HouseVault calculates the next service date. Use **Log service** after maintenance to record cost and notes and update the item's last-service date.
-
-**Export data:** Use the inventory controls to export inventory CSV or print a filtered inventory report. Warranty and maintenance sections provide their own CSV exports; the service spending section exports detailed service history.
-
-**Back up or restore:** Use **Backup JSON** regularly to download a copy of your data. **Restore JSON** replaces the current inventory after confirmation, so export your current data before restoring.
-
-## Privacy and limitations
-
-- Records are stored in browser `localStorage` on the current device/browser only.
-- Clearing site data, using private browsing, or changing browsers/devices may remove or hide your inventory.
-- No authentication, encryption-at-rest feature, cloud database, or automatic cross-device sync is provided.
-- JSON backup files and exported CSVs may contain inventory details; store and share them carefully.
-- Values are user-entered estimates, not insurance appraisals.
-- Maintenance and warranty information is informational; verify critical service requirements with manufacturer documentation.
-
-## Tech stack
-
-- React 19 + TypeScript
-- Vite
-- Lucide icons
-- Vitest, ESLint, and GitHub Actions
-- Browser localStorage for persistence
-
-## Deployment
-
-The GitHub Pages deployment workflow builds and publishes the `dist` directory after pushes to `main`. Under repository **Settings → Pages**, select **GitHub Actions** as the deployment source.
+- Inventory metadata and attachments are persisted locally in **IndexedDB**. HouseVault has no account login, hosted database, end-to-end encryption, or cross-device synchronization.
+- Attachments are stored separately from inventory metadata in IndexedDB. HouseVault cleans up unreferenced attachments; it does not upload them to GitHub.
+- Clearing browser/app data or uninstalling the installed PWA may permanently remove local records unless you have a JSON backup.
+- JSON backups and exported reports can contain serial numbers, receipts, and personal details. Store them securely.
+- Equipment values are user-entered estimates, **not professional appraisals**. Verify safety-critical maintenance and warranty details with manufacturers.
+- Maintenance alerts appear **inside the app**, not as system push notifications.
+- Calendar `.ics` export is a **snapshot**; subsequent edits do not automatically update previously imported events.
+- Storage capacity and offline/PWA behavior depend on the browser and operating system.
 
 ## Roadmap
 
-Potential future work includes item photos and attachments, improved dashboard navigation, advanced reporting, optional authenticated private storage and cross-device sync, and integration with Daher HomeOS. These are **not yet implemented**.
+Potential next upgrades: printable QR-code equipment labels, richer maintenance work orders and spare-parts tracking, insurance documentation and valuation tools, interactive room maps, and **optional** authenticated cloud sync that preserves local-first operation.
 
 ---
 
-HouseVault is an evolving open-source portfolio project. Contributions and issue reports are welcome through [GitHub Issues](https://github.com/JamalDaher/housevault/issues).
-
-## Install HouseVault on iPhone (PWA)
-
-1. Open the live [HouseVault site](https://jamaldaher.github.io/housevault/) in **Safari**.
-2. Tap **Share** → **Add to Home Screen** → **Add** (on newer iOS versions, find this under the Share menu's actions).
-3. Open HouseVault from its Home Screen icon. It runs in a standalone window.
-
-The app caches its public HTML, JavaScript, CSS and icon for offline use. **Open it online once and allow it to finish loading before testing offline.** Data continues to live in this device/browser's IndexedDB; the service worker never caches inventory or uploaded photos. If iOS creates a separate storage context for the Home Screen app, your Safari inventory may not appear there. **Export a JSON backup in Safari before installing**, then import that backup inside the installed app if necessary. Do not delete Safari data until you've verified the installed app contains your inventory and attachments.
-
-Offline editing is local only; there is no automatic cloud sync. Updates to the app shell require a subsequent online visit. iOS installation icons and offline caching behavior can vary by OS version; the current icon is SVG and may need a PNG fallback for a custom iOS Home Screen icon.
+HouseVault is an evolving portfolio project. Suggestions and bug reports are welcome via [GitHub Issues](https://github.com/JamalDaher/housevault/issues).
