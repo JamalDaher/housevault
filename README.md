@@ -101,3 +101,7 @@ Open an equipment record, choose **QR label**, then **Print label**. The QR is g
 ### Scan QR codes inside the installed app
 
 In the **Inventory** view, tap **Scan QR** to open the built-in camera scanner. Allow camera permission when prompted, then point your iPhone at a HouseVault equipment label. The matching local record opens inside HouseVault, avoiding Safari's separate storage context. A QR code cannot retrieve inventory stored only on another device. Camera access requires HTTPS and permission; you can close the scanner at any time.
+
+### Cleaner dashboard and quick actions
+
+The Overview dashboard now has one-tap **Scan equipment**, **Add equipment**, and **Browse inventory** shortcuts. The Inventory screen keeps **Scan QR** visible while grouping less-frequent CSV, backup, and print commands under **Import, export & print**. These changes only reorganize the interface; they do not change inventory storage or attachment handling.
