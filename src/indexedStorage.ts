@@ -5,7 +5,6 @@ const STORE="inventory";
 const ASSETS="attachments";
 const RECORD="items";
 const PREFIX="hv-asset:";
-type StoredDocument={id:string;name:string;type:string;data:string};
 function legacyItems():Item[]{
  try{const raw=localStorage.getItem(LEGACY_KEY);if(!raw)return seed;const parsed:unknown=JSON.parse(raw);return Array.isArray(parsed)?parsed as Item[]:seed;}catch{return seed;}
 }
