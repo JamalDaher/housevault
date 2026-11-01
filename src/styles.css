@@ -107,3 +107,12 @@
 .detail-service-list span{float:right;font-size:13px}
 .detail-service-list p{font-size:12px;color:#66758a;margin:6px 0 0}
 @media(max-width:540px){.detail-facts{grid-template-columns:1fr 1fr;gap:12px}.equipment-detail{max-height:92vh}.detail-photos button{flex-basis:125px;height:105px}}
+
+/* Per-equipment custom fields */
+.custom-fields-editor{border-top:1px solid #e5eaf1;padding:16px 0}
+.custom-fields-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:7px}
+.custom-fields-editor>small{display:block;color:#64748b;margin-bottom:12px}
+.custom-field-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px}
+.custom-field-row input{min-width:0;border:1px solid #dbe3ed;border-radius:8px;padding:10px}
+.custom-field-row button{padding:8px}
+@media(max-width:580px){.custom-field-row{grid-template-columns:1fr auto}.custom-field-row input:first-child{grid-column:1/-1}}

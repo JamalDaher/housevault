@@ -38,3 +38,8 @@ it("groups maintenance calendar by month and sorts dates",()=>{const items=[{...
 it("preserves equipment photos in JSON backups and rejects malformed photo data",()=>{const item={...seed[0],photo:"data:image/jpeg;base64,AAAA"};expect(parseBackup(exportBackup([item]))[0].photo).toBe(item.photo);const invalid=JSON.parse(exportBackup([item]));invalid.items[0].photo="javascript:alert(1)";expect(()=>parseBackup(JSON.stringify(invalid))).toThrow("Invalid equipment photo");});
 it("handles empty lists",()=>expect(totalValue([])).toBe(0));
 });
+describe("custom equipment fields",()=>{
+ it("round-trips custom fields in backups",()=>{const item={...seed[0],customFields:[{id:"hours",label:"Engine hours",value:"124.5"},{id:"receipt",label:"Receipt reference",value:"Receipt-01"}]};expect(parseBackup(exportBackup([item]))[0].customFields).toEqual(item.customFields);});
+ it("rejects malformed custom fields on restore",()=>{const backup=JSON.parse(exportBackup(seed));backup.items[0].customFields=[{id:"x",label:"",value:"bad"}];expect(()=>parseBackup(JSON.stringify(backup))).toThrow("Invalid custom equipment fields.");});
+ it("rejects invalid custom field labels",()=>expect(validItem({...seed[0],customFields:[{id:"x",label:"",value:"1"}]})).toBe(false));
+});

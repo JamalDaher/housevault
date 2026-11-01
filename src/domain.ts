@@ -1,6 +1,7 @@
 export type Category = "Tools" | "Electronics" | "Appliances" | "Outdoor" | "Other";
 export type ServiceRecord = { id:string; date:string; task:string; notes:string; cost:number }; 
-export type Item = { id: string; name: string; category: Category; location: string; quantity: number; value: number; notes: string; brand?: string; model?: string; serialNumber?: string; purchaseDate?: string; warrantyEnd?: string; maintenanceTask?: string; lastService?: string; serviceIntervalDays?: number; serviceHistory?: ServiceRecord[]; photo?: string; photos?: string[]; };
+export type CustomField = { id:string; label:string; value:string };
+export type Item = { id: string; name: string; category: Category; location: string; quantity: number; value: number; notes: string; brand?: string; model?: string; serialNumber?: string; purchaseDate?: string; warrantyEnd?: string; maintenanceTask?: string; lastService?: string; serviceIntervalDays?: number; serviceHistory?: ServiceRecord[]; photo?: string; photos?: string[]; customFields?: CustomField[]; };
 export const categories: Category[] = ["Tools","Electronics","Appliances","Outdoor","Other"];
 export const seed: Item[] = [
 {id:"demo-1",name:"Portable Generator",category:"Tools",location:"Detached Garage",quantity:1,value:950,notes:"Demo record"},
@@ -12,7 +13,7 @@ export function totalValue(items: Item[]): number { return items.reduce((sum,ite
 export function filterItems(items: Item[], query: string, category: string): Item[] {
  const q=query.trim().toLowerCase(); return items.filter(item=>(category==="All"||item.category===category)&&[item.name,item.location,item.notes,item.brand,item.model,item.serialNumber,item.maintenanceTask].some(s=>(s??"").toLowerCase().includes(q)));
 }
-export function validItem(item: Item): boolean { return Boolean(item.name.trim()&&item.location.trim()&&Number.isFinite(item.value)&&item.value>=0&&Number.isInteger(item.quantity)&&item.quantity>0); }
+export function validItem(item: Item): boolean { return Boolean((!item.customFields||item.customFields.length<=20&&item.customFields.every(f=>f.id.trim()&&f.label.trim()&&f.label.length<=60&&f.value.length<=500))&&item.name.trim()&&item.location.trim()&&Number.isFinite(item.value)&&item.value>=0&&Number.isInteger(item.quantity)&&item.quantity>0); }
 export function csvExport(items: Item[]): string {
  const escape=(v:string|number)=>'"'+String(v).replaceAll('"','""')+'"';
  return [["Name","Category","Location","Quantity","Unit Value","Notes"],...items.map(i=>[i.name,i.category,i.location,i.quantity,i.value,i.notes])].map(row=>row.map(escape).join(",")).join("\r\n");
@@ -46,6 +47,7 @@ export function parseBackup(raw: string): Item[] {
   if(!entry||typeof entry!=="object")throw new Error("Invalid inventory item.");
   const i=entry as Record<string,unknown>;
   if(typeof i.id!=="string"||!i.id.trim()||ids.has(i.id)||typeof i.name!=="string"||typeof i.location!=="string"||typeof i.notes!=="string"||typeof i.category!=="string"||!categories.includes(i.category as Category)||typeof i.quantity!=="number"||typeof i.value!=="number")throw new Error("Backup contains invalid or duplicate records.");
+  if(i.customFields!==undefined&&(!Array.isArray(i.customFields)||i.customFields.length>20||i.customFields.some(f=>!f||typeof f!=="object"||typeof f.id!=="string"||!f.id.trim()||typeof f.label!=="string"||!f.label.trim()||f.label.length>60||typeof f.value!=="string"||f.value.length>500)||new Set(i.customFields.map(f=>f.id)).size!==i.customFields.length))throw new Error("Invalid custom equipment fields.");
   if(i.photos!==undefined&&(!Array.isArray(i.photos)||i.photos.length>6||i.photos.some(p=>typeof p!=="string"||!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(p)||p.length>250000)))throw new Error("Invalid equipment photos.");
   if(i.photo!==undefined&&(typeof i.photo!=="string"||!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(i.photo)||i.photo.length>250000))throw new Error("Invalid equipment photo.");
   for(const field of ["brand","model","serialNumber","purchaseDate","warrantyEnd","maintenanceTask","lastService"])if(i[field]!==undefined&&typeof i[field]!=="string")throw new Error("Invalid optional item field.");
