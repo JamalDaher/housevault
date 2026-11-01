@@ -21,6 +21,7 @@ HouseVault is an installable, offline-capable progressive web app (PWA) built wi
 | Warranties | Active, expiring, expired, and unknown warranty status with attention lists |
 | Reports | Printable inventory report, inventory CSV, warranty CSV, maintenance schedule CSV, and service history CSV |
 | Import & backup | CSV import with preview and duplicate checks, downloadable CSV template, versioned JSON backup and restore |
+| QR equipment labels | Open an equipment record, select **QR label**, and print a scannable label; scanning opens its record on a device containing the same local inventory |
 | Offline PWA | Add to iPhone Home Screen, launch in standalone mode, and reopen the app offline after first loading it online |
 | Device storage | IndexedDB inventory with separate attachment storage, automatic orphan attachment cleanup, and storage usage inspection |
 
@@ -92,3 +93,7 @@ Potential next upgrades: printable QR-code equipment labels, richer maintenance 
 ---
 
 HouseVault is an evolving portfolio project. Suggestions and bug reports are welcome via [GitHub Issues](https://github.com/JamalDaher/housevault/issues).
+
+### Printable equipment QR labels
+
+Open an equipment record, choose **QR label**, then **Print label**. The QR is generated on your device, without a third-party QR service. It encodes the HouseVault URL and an opaque equipment ID, **not** the item's serial number or documents. Scan with your iPhone camera to open that record. Because HouseVault does not sync data between devices, a scan on a different phone may show a missing-record warning until that device has the matching inventory restored from a backup. Labels require the deployed HouseVault URL to remain accessible; offline scanning depends on the PWA being installed and cached.
