@@ -94,3 +94,15 @@ export function maintenanceQueue(items:Item[],today=new Date().toISOString().sli
  const rank={overdue:0,due:1,upcoming:2,unscheduled:3};
  return items.filter(i=>maintenanceStatus(i,today)!=="unscheduled").sort((a,b)=>rank[maintenanceStatus(a,today)]-rank[maintenanceStatus(b,today)]||(nextServiceDate(a)??"").localeCompare(nextServiceDate(b)??"")||a.name.localeCompare(b.name));
 }
+
+export type InventorySort = "name" | "value-high" | "value-low" | "quantity-high" | "warranty-soon";
+export function sortInventory(items:Item[],sort:InventorySort):Item[] {
+ const result=[...items];const byName=(a:Item,b:Item)=>a.name.localeCompare(b.name)||a.id.localeCompare(b.id);
+ return result.sort((a,b)=>{
+  if(sort==="value-high")return b.value*b.quantity-a.value*a.quantity||byName(a,b);
+  if(sort==="value-low")return a.value*a.quantity-b.value*b.quantity||byName(a,b);
+  if(sort==="quantity-high")return b.quantity-a.quantity||byName(a,b);
+  if(sort==="warranty-soon")return (a.warrantyEnd||"9999-12-31").localeCompare(b.warrantyEnd||"9999-12-31")||byName(a,b);
+  return byName(a,b);
+ });
+}
