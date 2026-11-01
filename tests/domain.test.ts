@@ -47,5 +47,5 @@ describe("custom equipment fields",()=>{
 describe("equipment documents",()=>{
  it("preserves attached documents through JSON backups",()=>{const documents=[{id:"receipt",name:"receipt.pdf",type:"application/pdf",data:"data:application/pdf;base64,JVBERi0x"}];expect(parseBackup(exportBackup([{...seed[0],documents}]))[0].documents).toEqual(documents);});
  it("rejects invalid attachment types in backups",()=>{const backup=JSON.parse(exportBackup(seed));backup.items[0].documents=[{id:"bad",name:"script",type:"text/html",data:"data:text/html;base64,PGgxPg=="}];expect(()=>parseBackup(JSON.stringify(backup))).toThrow("Invalid equipment documents.");});
- it("rejects excessive attachment counts",()=>{const backup=JSON.parse(exportBackup(seed));backup.items[0].documents=Array.from({length:4},(_,i)=>({id:String(i),name:"receipt.pdf",type:"application/pdf",data:"data:application/pdf;base64,JVBERi0x"}));expect(()=>parseBackup(JSON.stringify(backup))).toThrow("Invalid equipment documents.");});
+ it("rejects excessive attachment counts",()=>{const backup=JSON.parse(exportBackup(seed));backup.items[0].documents=Array.from({length:16},(_,i)=>({id:String(i),name:"receipt.pdf",type:"application/pdf",data:"data:application/pdf;base64,JVBERi0x"}));expect(()=>parseBackup(JSON.stringify(backup))).toThrow("Invalid equipment documents.");});
 });
