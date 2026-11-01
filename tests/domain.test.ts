@@ -1,5 +1,5 @@
 import { describe,it,expect } from "vitest";
-import { categorySummary,csvExport,csvTemplate,parseInventoryCSV,inventoryDuplicateKey,exportBackup,parseBackup,filterItems,totalValue,validItem,seed,locationPaths,normalizeLocation,locationTree,itemsAtLocation,warrantyStatus,maintenanceStatus,maintenanceQueue,sortInventory,nextServiceDate,recordService } from "../src/domain";
+import { categorySummary,locationSummary,csvExport,csvTemplate,parseInventoryCSV,inventoryDuplicateKey,exportBackup,parseBackup,filterItems,totalValue,validItem,seed,locationPaths,normalizeLocation,locationTree,itemsAtLocation,warrantyStatus,maintenanceStatus,maintenanceQueue,sortInventory,nextServiceDate,recordService } from "../src/domain";
 describe("inventory domain",()=>{
 it("totals quantities correctly",()=>expect(totalValue([{...seed[0],quantity:2,value:100}])).toBe(200));
 it("filters by location and category",()=>expect(filterItems(seed,"workshop","Tools")).toHaveLength(1));
@@ -25,5 +25,6 @@ it("rejects invalid CSV quantities",()=>expect(()=>parseInventoryCSV('Name,Categ
 it("normalizes duplicate keys",()=>expect(inventoryDuplicateKey({...seed[0],name:" DRILL ",location:" House / Garage " })).toBe(inventoryDuplicateKey({...seed[0],name:"drill",location:"House/Garage"})));
 it("generates a header-only CSV template",()=>{expect(csvTemplate().trim()).toBe(csvExport([]));expect(parseInventoryCSV(csvTemplate())).toEqual([]);});
 it("summarizes categories with quantity-adjusted values",()=>{const result=categorySummary([{...seed[0],quantity:2,value:100},seed[1]]);expect(result).toEqual([{category:"Tools",records:2,quantity:3,value:340}]);});
+it("summarizes top-level locations including descendants",()=>{const items=[{...seed[0],location:"House / Garage",quantity:2,value:100},{...seed[1],location:"House / Kitchen",value:50},{...seed[2],location:"Shed",value:25}];expect(locationSummary(items)).toEqual([{location:"House",records:2,quantity:3,value:250},{location:"Shed",records:1,quantity:1,value:25}]);});
 it("handles empty lists",()=>expect(totalValue([])).toBe(0));
 });
