@@ -2,7 +2,7 @@ import EquipmentScanner from "./EquipmentScanner";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
-import { Archive, Boxes, Download, Upload, Clock3, Home, LayoutDashboard, MapPin, PackagePlus, Printer, ScanLine, Search, ShieldCheck, Trash2, X, ImagePlus, Grid2X2, List } from "lucide-react";
+import { Archive, Boxes, Download, Upload, Clock3, Home, LayoutDashboard, MapPin, PackagePlus, Printer, ScanLine, Search, ShieldCheck, X, ImagePlus, Grid2X2, List } from "lucide-react";
 import { categories, categorySummary, locationSummary, serviceCostSummary, serviceHistoryCSV, warrantyCSV, maintenanceScheduleCSV, maintenanceCalendar, maintenanceAlerts, maintenanceICS, incompleteInventory, mostValuableItems, csvExport, csvTemplate, parseInventoryCSV, inventoryDuplicateKey, exportBackup, parseBackup, filterItems, locationPaths, locationTree, itemsAtLocation, normalizeLocation, warrantyStatus, warrantyQueue, maintenanceStatus, maintenanceQueue, nextServiceDate, recordService, sortInventory, totalValue, type InventorySort, validItem, type Category, type Item } from "./domain";
 import { loadInventory, saveInventory, inspectAttachmentStorage, type AttachmentStorageStats } from "./indexedStorage";
 const blank=():Item=>({id:"",name:"",category:"Tools",location:"",quantity:1,value:0,notes:"",brand:"",model:"",serialNumber:"",purchaseDate:"",warrantyEnd:"",maintenanceTask:"",lastService:"",serviceIntervalDays:undefined});
