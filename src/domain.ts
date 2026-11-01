@@ -200,3 +200,17 @@ export function maintenanceCalendar(items:Item[]):{month:string;entries:{item:It
  for(const item of items){const due=nextServiceDate(item);if(!due)continue;const month=due.slice(0,7);const entries=months.get(month)??[];entries.push({item,due});months.set(month,entries);}
  return [...months.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([month,entries])=>({month,entries:entries.sort((a,b)=>a.due.localeCompare(b.due)||a.item.name.localeCompare(b.item.name))}));
 }
+
+/** Maintenance alerts are calculated on demand; no background notifications are sent. */
+export function maintenanceAlerts(items:Item[],windowDays:7|14|30,today=new Date().toISOString().slice(0,10)):Item[]{
+ const start=Date.parse(today+"T00:00:00Z");
+ return items.filter(item=>{const due=nextServiceDate(item);if(!due)return false;const days=Math.round((Date.parse(due+"T00:00:00Z")-start)/86400000);return days<=windowDays;}).sort((a,b)=>(nextServiceDate(a)??"").localeCompare(nextServiceDate(b)??"")||a.name.localeCompare(b.name));
+}
+function icsEscape(value:string):string{return value.replace(/\\/g,"\\\\").replace(/\r?\n/g,"\\n").replace(/,/g,"\\,").replace(/;/g,"\\;");}
+export function maintenanceICS(items:Item[],stamp="20261101T000000Z"):string{
+ const lines=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//HouseVault//Maintenance Calendar//EN","CALSCALE:GREGORIAN","METHOD:PUBLISH"];
+ for(const item of items){const due=nextServiceDate(item);if(!due)continue;const start=due.replace(/-/g,"");const endDate=new Date(due+"T00:00:00Z");endDate.setUTCDate(endDate.getUTCDate()+1);const end=endDate.toISOString().slice(0,10).replace(/-/g,"");
+ lines.push("BEGIN:VEVENT","UID:"+encodeURIComponent(item.id)+"-"+start+"@housevault","DTSTAMP:"+stamp,"DTSTART;VALUE=DATE:"+start,"DTEND;VALUE=DATE:"+end,"SUMMARY:"+icsEscape("Maintenance: "+item.name),"DESCRIPTION:"+icsEscape((item.maintenanceTask||"Scheduled service")+" | "+item.location),"END:VEVENT");
+ }
+ return [...lines,"END:VCALENDAR",""].join("\r\n");
+}

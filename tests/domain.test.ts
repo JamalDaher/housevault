@@ -1,5 +1,5 @@
 import { describe,it,expect } from "vitest";
-import { categorySummary,locationSummary,serviceCostSummary,serviceHistoryCSV,warrantyCSV,maintenanceScheduleCSV,maintenanceCalendar,incompleteInventory,mostValuableItems,missingItemDetails,csvExport,csvTemplate,parseInventoryCSV,inventoryDuplicateKey,exportBackup,parseBackup,filterItems,totalValue,validItem,seed,locationPaths,normalizeLocation,locationTree,itemsAtLocation,warrantyStatus,warrantyQueue,maintenanceStatus,maintenanceQueue,sortInventory,nextServiceDate,recordService } from "../src/domain";
+import { maintenanceAlerts, maintenanceICS, categorySummary,locationSummary,serviceCostSummary,serviceHistoryCSV,warrantyCSV,maintenanceScheduleCSV,maintenanceCalendar,incompleteInventory,mostValuableItems,missingItemDetails,csvExport,csvTemplate,parseInventoryCSV,inventoryDuplicateKey,exportBackup,parseBackup,filterItems,totalValue,validItem,seed,locationPaths,normalizeLocation,locationTree,itemsAtLocation,warrantyStatus,warrantyQueue,maintenanceStatus,maintenanceQueue,sortInventory,nextServiceDate,recordService } from "../src/domain";
 describe("inventory domain",()=>{
 it("totals quantities correctly",()=>expect(totalValue([{...seed[0],quantity:2,value:100}])).toBe(200));
 it("filters by location and category",()=>expect(filterItems(seed,"workshop","Tools")).toHaveLength(1));
@@ -61,4 +61,20 @@ it("accepts valid maintenance checklists and rejects invalid steps",()=>{
  expect(validItem({...seed[0],maintenanceChecklist:[{id:"oil",label:"Check oil level"}]})).toBe(true);
  expect(validItem({...seed[0],maintenanceChecklist:[{id:"oil",label:""}]})).toBe(false);
  expect(validItem({...seed[0],maintenanceChecklist:Array.from({length:21},(_,i)=>({id:String(i),label:"Check"}))})).toBe(false);
+});
+
+it("filters maintenance alerts by chosen horizon and includes overdue",()=>{
+ const base={...seed[0],lastService:"2026-10-25",serviceIntervalDays:14};
+ const future={...seed[1],lastService:"2026-10-25",serviceIntervalDays:25};
+ const overdue={...seed[2],lastService:"2026-09-01",serviceIntervalDays:7};
+ expect(maintenanceAlerts([base,future,overdue],7,"2026-11-01").map(i=>i.id)).toEqual([overdue.id,base.id]);
+ expect(maintenanceAlerts([base,future,overdue],30,"2026-11-01")).toHaveLength(3);
+});
+it("exports dated maintenance as valid all-day iCalendar events",()=>{
+ const ics=maintenanceICS([{...seed[0],name:"Generator, main",lastService:"2026-10-25",serviceIntervalDays:14}]);
+ expect(ics).toContain("BEGIN:VCALENDAR");
+ expect(ics).toContain("DTSTART;VALUE=DATE:20261108");
+ expect(ics).toContain("DTEND;VALUE=DATE:20261109");
+ expect(ics).toContain("SUMMARY:Maintenance: Generator\\, main");
+ expect(ics).toContain("END:VCALENDAR");
 });
