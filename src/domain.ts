@@ -1,8 +1,9 @@
 export type Category = "Tools" | "Electronics" | "Appliances" | "Outdoor" | "Other";
 export type ServiceRecord = { id:string; date:string; task:string; notes:string; cost:number }; 
 export type CustomField = { id:string; label:string; value:string };
+export type MaintenanceStep = { id:string; label:string };
 export type EquipmentDocument = { id:string; name:string; type:string; data:string };
-export type Item = { id: string; name: string; category: Category; location: string; quantity: number; value: number; notes: string; brand?: string; model?: string; serialNumber?: string; purchaseDate?: string; warrantyEnd?: string; maintenanceTask?: string; lastService?: string; serviceIntervalDays?: number; serviceHistory?: ServiceRecord[]; photo?: string; photos?: string[]; customFields?: CustomField[]; documents?: EquipmentDocument[]; };
+export type Item = { id: string; name: string; category: Category; location: string; quantity: number; value: number; notes: string; brand?: string; model?: string; serialNumber?: string; purchaseDate?: string; warrantyEnd?: string; maintenanceTask?: string; lastService?: string; serviceIntervalDays?: number; serviceHistory?: ServiceRecord[]; maintenanceChecklist?: MaintenanceStep[]; photo?: string; photos?: string[]; customFields?: CustomField[]; documents?: EquipmentDocument[]; };
 export const categories: Category[] = ["Tools","Electronics","Appliances","Outdoor","Other"];
 export const seed: Item[] = [
 {id:"demo-1",name:"Portable Generator",category:"Tools",location:"Detached Garage",quantity:1,value:950,notes:"Demo record"},
@@ -14,7 +15,8 @@ export function totalValue(items: Item[]): number { return items.reduce((sum,ite
 export function filterItems(items: Item[], query: string, category: string): Item[] {
  const q=query.trim().toLowerCase(); return items.filter(item=>(category==="All"||item.category===category)&&[item.name,item.location,item.notes,item.brand,item.model,item.serialNumber,item.maintenanceTask,...(item.customFields??[]).flatMap(field=>[field.label,field.value])].some(s=>(s??"").toLowerCase().includes(q)));
 }
-export function validItem(item: Item): boolean { return Boolean((!item.customFields||item.customFields.length<=20&&item.customFields.every(f=>f.id.trim()&&f.label.trim()&&f.label.length<=60&&f.value.length<=500))&&item.name.trim()&&item.location.trim()&&Number.isFinite(item.value)&&item.value>=0&&Number.isInteger(item.quantity)&&item.quantity>0); }
+export function validMaintenanceChecklist(item:Item):boolean{return !item.maintenanceChecklist||(Array.isArray(item.maintenanceChecklist)&&item.maintenanceChecklist.length<=20&&item.maintenanceChecklist.every(step=>typeof step.id==="string"&&step.id.trim().length>0&&typeof step.label==="string"&&step.label.trim().length>0&&step.label.length<=120));}
+export function validItem(item: Item): boolean { return Boolean(validMaintenanceChecklist(item)&&(!item.customFields||item.customFields.length<=20&&item.customFields.every(f=>f.id.trim()&&f.label.trim()&&f.label.length<=60&&f.value.length<=500))&&item.name.trim()&&item.location.trim()&&Number.isFinite(item.value)&&item.value>=0&&Number.isInteger(item.quantity)&&item.quantity>0); }
 export function csvExport(items: Item[]): string {
  const escape=(v:string|number)=>'"'+String(v).replaceAll('"','""')+'"';
  return [["Name","Category","Location","Quantity","Unit Value","Notes"],...items.map(i=>[i.name,i.category,i.location,i.quantity,i.value,i.notes])].map(row=>row.map(escape).join(",")).join("\r\n");

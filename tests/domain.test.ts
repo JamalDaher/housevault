@@ -56,3 +56,9 @@ it("inventory search matches custom field names and values",()=>{
  expect(filterItems([item],"Asset tag","All")).toHaveLength(1);
  expect(filterItems([item],"not-present","All")).toHaveLength(0);
 });
+
+it("accepts valid maintenance checklists and rejects invalid steps",()=>{
+ expect(validItem({...seed[0],maintenanceChecklist:[{id:"oil",label:"Check oil level"}]})).toBe(true);
+ expect(validItem({...seed[0],maintenanceChecklist:[{id:"oil",label:""}]})).toBe(false);
+ expect(validItem({...seed[0],maintenanceChecklist:Array.from({length:21},(_,i)=>({id:String(i),label:"Check"}))})).toBe(false);
+});
