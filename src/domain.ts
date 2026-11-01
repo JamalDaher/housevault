@@ -51,3 +51,12 @@ export function parseBackup(raw: string): Item[] {
   ids.add(item.id);return item;
  });
 }
+
+export type WarrantyStatus = "unknown" | "active" | "expiring" | "expired";
+export function warrantyStatus(item: Item, today = new Date().toISOString().slice(0,10)): WarrantyStatus {
+ const end=item.warrantyEnd;
+ if(!end||!/^(\d{4})-(\d{2})-(\d{2})$/.test(end)||Number.isNaN(Date.parse(end))||new Date(end).toISOString().slice(0,10)!==end)return "unknown";
+ if(end<today)return "expired";
+ const days=Math.round((Date.parse(end+"T00:00:00Z")-Date.parse(today+"T00:00:00Z"))/86400000);
+ return days<=30?"expiring":"active";
+}
