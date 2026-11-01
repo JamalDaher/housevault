@@ -116,3 +116,11 @@
 .custom-field-row input{min-width:0;border:1px solid #dbe3ed;border-radius:8px;padding:10px}
 .custom-field-row button{padding:8px}
 @media(max-width:580px){.custom-field-row{grid-template-columns:1fr auto}.custom-field-row input:first-child{grid-column:1/-1}}
+
+/* Local equipment documents */
+.equipment-doc-editor{padding:16px 0;border-top:1px solid #e5eaf1}
+.equipment-doc-editor>strong,.equipment-doc-editor>small{display:block;margin-bottom:8px}
+.equipment-doc-editor>small{color:#64748b}
+.equipment-doc-row,.equipment-doc-list>div{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #e5eaf1;overflow-wrap:anywhere}
+.equipment-doc-row span,.equipment-doc-list span{min-width:0;overflow-wrap:anywhere}
+.equipment-doc-list a{white-space:nowrap}
