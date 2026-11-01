@@ -147,3 +147,12 @@ export function warrantyQueue(items:Item[],today=new Date().toISOString().slice(
 export function serviceCostSummary(items:Item[]):{id:string;name:string;location:string;cost:number;services:number}[] {
  return items.map(i=>({id:i.id,name:i.name,location:i.location,cost:(i.serviceHistory??[]).reduce((sum,r)=>sum+r.cost,0),services:i.serviceHistory?.length??0})).filter(i=>i.services>0).sort((a,b)=>b.cost-a.cost||a.name.localeCompare(b.name));
 }
+
+export type MissingDetail="Brand"|"Model"|"Serial number"|"Purchase date"|"Warranty date";
+export function missingItemDetails(item:Item):MissingDetail[] {
+ const fields:[MissingDetail,string|undefined][]=[["Brand",item.brand],["Model",item.model],["Serial number",item.serialNumber],["Purchase date",item.purchaseDate],["Warranty date",item.warrantyEnd]];
+ return fields.filter(([,value])=>!value?.trim()).map(([name])=>name);
+}
+export function incompleteInventory(items:Item[]):{item:Item;missing:MissingDetail[]}[] {
+ return items.map(item=>({item,missing:missingItemDetails(item)})).filter(entry=>entry.missing.length>0).sort((a,b)=>b.missing.length-a.missing.length||a.item.name.localeCompare(b.item.name));
+}
