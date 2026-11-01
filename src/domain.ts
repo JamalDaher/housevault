@@ -138,3 +138,8 @@ export function locationSummary(items:Item[]):{location:string;records:number;qu
  const roots=[...new Set(items.map(i=>normalizeLocation(i.location).split(" / ")[0]).filter(Boolean))];
  return roots.map(location=>{const group=itemsAtLocation(items,location);return {location,records:group.length,quantity:group.reduce((sum,i)=>sum+i.quantity,0),value:totalValue(group)};}).sort((a,b)=>b.value-a.value||a.location.localeCompare(b.location));
 }
+
+export function warrantyQueue(items:Item[],today=new Date().toISOString().slice(0,10)):Item[] {
+ const rank={expired:0,expiring:1,active:2,unknown:3};
+ return items.filter(i=>["expired","expiring"].includes(warrantyStatus(i,today))).sort((a,b)=>rank[warrantyStatus(a,today)]-rank[warrantyStatus(b,today)]||(a.warrantyEnd??"").localeCompare(b.warrantyEnd??"")||a.name.localeCompare(b.name));
+}
