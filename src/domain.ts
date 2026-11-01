@@ -126,3 +126,6 @@ export function parseInventoryCSV(raw:string):Omit<Item,"id">[] {
 export function inventoryDuplicateKey(item:Pick<Item,"name"|"category"|"location">):string {
  return [item.name.trim().toLowerCase(),item.category.toLowerCase(),normalizeLocation(item.location).toLowerCase()].join("|");
 }
+
+/** Blank template using the same headers accepted by CSV import. */
+export function csvTemplate():string {return csvExport([])+"\r\n";}
