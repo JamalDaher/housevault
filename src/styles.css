@@ -35,3 +35,5 @@
  .print-report tr{break-inside:avoid}
  .print-report .print-note{font-size:8pt;margin-top:12pt}
 }
+
+.maintenance-calendar-panel{margin-bottom:24px}.calendar-months{padding:0 22px 22px;display:grid;gap:18px}.calendar-month h3{font-size:15px;display:flex;justify-content:space-between;gap:12px;margin:0 0 8px}.calendar-month h3 small{font-size:12px;font-weight:500;color:#69778a}.calendar-entries{border:1px solid #e1e7ef;border-radius:12px;overflow:hidden}.calendar-entry{display:flex;align-items:center;gap:14px;width:100%;padding:12px 14px;background:white;border:0;border-bottom:1px solid #e1e7ef;text-align:left;color:#18253a}.calendar-entry:last-child{border-bottom:0}.calendar-entry:hover{background:#f4f8fb}.calendar-entry time{background:#edf3f7;border-radius:8px;padding:8px;font-weight:750;font-size:18px;min-width:42px;text-align:center}.calendar-entry>span:nth-child(2){flex:1;min-width:0}.calendar-entry strong,.calendar-entry small{display:block}.calendar-entry small{font-size:12px;color:#68798b;margin-top:3px}@media(max-width:680px){.calendar-months{padding:0 16px 16px}.calendar-entry{gap:8px;flex-wrap:wrap}.calendar-entry .warranty{margin-left:auto}}
