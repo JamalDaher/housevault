@@ -201,3 +201,11 @@ tbody tr:hover{background:#f8fbfe}
 .storage-note{margin:0;padding:12px 14px;border-radius:10px;background:#f3f7fa}
 @media(max-width:680px){.storage-overview-body{padding:0 14px 16px;gap:14px}.storage-metrics{gap:7px}.storage-metric{padding:12px 9px}.storage-metric strong{font-size:19px}.storage-metric span{font-size:11px}}
 @media(max-width:360px){.storage-metrics{grid-template-columns:1fr}.storage-metric{flex-direction:row;justify-content:space-between;align-items:center}}
+
+/* Equipment selection and bulk operations */
+.bulk-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0;padding:12px;border:1px solid var(--border,#344052);border-radius:12px}
+.bulk-toolbar label,.equipment-select{display:inline-flex;align-items:center;gap:7px;font-size:.9rem}
+.bulk-toolbar input:not([type=checkbox]),.bulk-toolbar select{min-width:125px;max-width:190px;padding:9px;border-radius:8px}
+.bulk-toolbar button{min-height:38px}
+.equipment-select{padding:10px 12px}
+@media(max-width:640px){.bulk-toolbar{align-items:stretch}.bulk-toolbar input:not([type=checkbox]),.bulk-toolbar select{flex:1 1 135px;max-width:none}.bulk-toolbar button{flex:1 1 auto}}
