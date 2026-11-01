@@ -1,3 +1,4 @@
+/* global self, caches, URL, fetch, Response */
 /* HouseVault: cache only public application shell and static assets, never user inventory. */
 const CACHE="housevault-shell-v1";
 const ROOT="/housevault/";
