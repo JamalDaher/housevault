@@ -186,3 +186,18 @@ tbody tr:hover{background:#f8fbfe}
 }
 @media(prefers-reduced-motion:reduce){.stat,.equipment-card,.sidebar nav button,.primary,.secondary{transition:none!important;transform:none!important}}
 @media print{.sidebar{position:static;box-shadow:none}header{border:0}}
+
+/* Compact storage overview: single-column friendly on iPhone */
+.storage-overview-body{padding:0 20px 20px;display:grid;gap:16px;min-width:0}
+.storage-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.storage-metric{min-width:0;padding:15px 12px;border:1px solid var(--hv-line);background:#f8fafc;border-radius:12px;display:flex;flex-direction:column;gap:7px}
+.storage-metric span{font-size:12px;color:#526477}
+.storage-metric strong{font-size:clamp(18px,3vw,25px);line-height:1.1;overflow-wrap:anywhere;color:#19314d}
+.storage-capacity{display:grid;gap:8px;min-width:0}
+.storage-capacity-label{display:flex;justify-content:space-between;gap:12px;font-size:13px;font-weight:650;flex-wrap:wrap}
+.storage-capacity-track{height:9px;background:#e7eef3;border-radius:999px;overflow:hidden}
+.storage-capacity-track span{display:block;height:100%;background:#148e88;border-radius:999px}
+.storage-capacity small,.storage-muted,.storage-note{font-size:12px;line-height:1.5;color:#526477;overflow-wrap:anywhere}
+.storage-note{margin:0;padding:12px 14px;border-radius:10px;background:#f3f7fa}
+@media(max-width:680px){.storage-overview-body{padding:0 14px 16px;gap:14px}.storage-metrics{gap:7px}.storage-metric{padding:12px 9px}.storage-metric strong{font-size:19px}.storage-metric span{font-size:11px}}
+@media(max-width:360px){.storage-metrics{grid-template-columns:1fr}.storage-metric{flex-direction:row;justify-content:space-between;align-items:center}}
