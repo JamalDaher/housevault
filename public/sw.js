@@ -3,7 +3,7 @@ const CACHE="housevault-shell-v1";
 const ROOT="/housevault/";
 const SHELL=[ROOT,ROOT+"index.html",ROOT+"icon.svg",ROOT+"manifest.webmanifest"];
 self.addEventListener("install",event=>{
- event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)));
+ event.waitUntil((async()=>{const cache=await caches.open(CACHE);await cache.addAll(SHELL);const html=await (await cache.match(ROOT)).text();const assetPaths=[...html.matchAll(/(?:src|href)="(\/housevault\/assets\/[^"]+)"/g)].map(match=>match[1]);await cache.addAll(assetPaths);})());
  self.skipWaiting();
 });
 self.addEventListener("activate",event=>{
