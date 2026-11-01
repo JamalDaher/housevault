@@ -92,3 +92,13 @@ Potential future work includes item photos and attachments, improved dashboard n
 ---
 
 HouseVault is an evolving open-source portfolio project. Contributions and issue reports are welcome through [GitHub Issues](https://github.com/JamalDaher/housevault/issues).
+
+## Install HouseVault on iPhone (PWA)
+
+1. Open the live [HouseVault site](https://jamaldaher.github.io/housevault/) in **Safari**.
+2. Tap **Share** → **Add to Home Screen** → **Add** (on newer iOS versions, find this under the Share menu's actions).
+3. Open HouseVault from its Home Screen icon. It runs in a standalone window.
+
+The app caches its public HTML, JavaScript, CSS and icon for offline use. **Open it online once and allow it to finish loading before testing offline.** Data continues to live in this device/browser's IndexedDB; the service worker never caches inventory or uploaded photos. If iOS creates a separate storage context for the Home Screen app, your Safari inventory may not appear there. **Export a JSON backup in Safari before installing**, then import that backup inside the installed app if necessary. Do not delete Safari data until you've verified the installed app contains your inventory and attachments.
+
+Offline editing is local only; there is no automatic cloud sync. Updates to the app shell require a subsequent online visit. iOS installation icons and offline caching behavior can vary by OS version; the current icon is SVG and may need a PNG fallback for a custom iOS Home Screen icon.
