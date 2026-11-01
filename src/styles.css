@@ -244,3 +244,21 @@ tbody tr:hover{background:#f8fbfe}
 
 /* Editor heading scrolls naturally with the rest of the form on iPhone. */
 .inventory-editor-dialog>.dialog-title{position:static!important;top:auto!important;z-index:auto;}
+
+
+/* QR labels are rendered locally; no third-party QR generation service. */
+.qr-label-dialog{width:min(100%,430px)}
+.qr-label-print{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:18px;border:1px dashed #a4b4c8;border-radius:12px;background:#fff;color:#14233a}
+.qr-label-print h3,.qr-label-print p{margin:0}
+.qr-label-print strong{font-size:18px;overflow-wrap:anywhere}
+.qr-label-print svg{max-width:100%;height:auto}
+.qr-label-print small{font-size:11px}
+.qr-label-note{font-size:12px;line-height:1.5;color:#53647b}
+@media print{
+ body:has(.qr-label-dialog) .shell{display:none!important}
+ body:has(.qr-label-dialog) .overlay:not(:has(.qr-label-dialog)){display:none!important}
+ body:has(.qr-label-dialog) .overlay:has(.qr-label-dialog){display:block!important;position:static!important;inset:auto!important;background:#fff!important;padding:0!important;overflow:visible!important}
+ body:has(.qr-label-dialog) .qr-label-dialog{display:block!important;box-shadow:none!important;overflow:visible!important;max-height:none!important;max-width:100%!important;width:100%!important;padding:0!important}
+ body:has(.qr-label-dialog) .qr-label-dialog>.dialog-title,body:has(.qr-label-dialog) .qr-label-dialog>.dialog-actions,body:has(.qr-label-dialog) .qr-label-note{display:none!important}
+ body:has(.qr-label-dialog) .qr-label-print{width:3.5in;min-height:3.5in;border:1px dashed #999;break-inside:avoid}
+}
