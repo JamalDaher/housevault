@@ -1,6 +1,6 @@
 export type Category = "Tools" | "Electronics" | "Appliances" | "Outdoor" | "Other";
 export type ServiceRecord = { id:string; date:string; task:string; notes:string; cost:number }; 
-export type Item = { id: string; name: string; category: Category; location: string; quantity: number; value: number; notes: string; brand?: string; model?: string; serialNumber?: string; purchaseDate?: string; warrantyEnd?: string; maintenanceTask?: string; lastService?: string; serviceIntervalDays?: number; serviceHistory?: ServiceRecord[]; };
+export type Item = { id: string; name: string; category: Category; location: string; quantity: number; value: number; notes: string; brand?: string; model?: string; serialNumber?: string; purchaseDate?: string; warrantyEnd?: string; maintenanceTask?: string; lastService?: string; serviceIntervalDays?: number; serviceHistory?: ServiceRecord[]; photo?: string; };
 export const categories: Category[] = ["Tools","Electronics","Appliances","Outdoor","Other"];
 export const seed: Item[] = [
 {id:"demo-1",name:"Portable Generator",category:"Tools",location:"Detached Garage",quantity:1,value:950,notes:"Demo record"},
@@ -46,6 +46,7 @@ export function parseBackup(raw: string): Item[] {
   if(!entry||typeof entry!=="object")throw new Error("Invalid inventory item.");
   const i=entry as Record<string,unknown>;
   if(typeof i.id!=="string"||!i.id.trim()||ids.has(i.id)||typeof i.name!=="string"||typeof i.location!=="string"||typeof i.notes!=="string"||typeof i.category!=="string"||!categories.includes(i.category as Category)||typeof i.quantity!=="number"||typeof i.value!=="number")throw new Error("Backup contains invalid or duplicate records.");
+  if(i.photo!==undefined&&(typeof i.photo!=="string"||!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(i.photo)||i.photo.length>250000))throw new Error("Invalid equipment photo.");
   for(const field of ["brand","model","serialNumber","purchaseDate","warrantyEnd","maintenanceTask","lastService"])if(i[field]!==undefined&&typeof i[field]!=="string")throw new Error("Invalid optional item field.");
   if(i.serviceIntervalDays!==undefined&&(!Number.isInteger(i.serviceIntervalDays)||Number(i.serviceIntervalDays)<1))throw new Error("Invalid maintenance interval.");
   if(i.serviceHistory!==undefined){if(!Array.isArray(i.serviceHistory)||i.serviceHistory.length>1000)throw new Error("Invalid service history.");for(const record of i.serviceHistory){if(!record||typeof record!=="object"||typeof record.id!=="string"||typeof record.date!=="string"||typeof record.task!=="string"||typeof record.notes!=="string"||typeof record.cost!=="number"||!Number.isFinite(record.cost)||record.cost<0||!validDate(record.date))throw new Error("Invalid service record.");}}
