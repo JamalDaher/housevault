@@ -177,3 +177,11 @@ export function warrantyCSV(items:Item[],today=new Date().toISOString().slice(0,
  for(const item of items)rows.push([item.name,item.brand??"",item.model??"",item.serialNumber??"",item.category,item.location,item.purchaseDate??"",item.warrantyEnd??"",warrantyStatus(item,today)]);
  return rows.map(row=>row.map(escape).join(",")).join("\r\n");
 }
+
+/** Export scheduled maintenance, including future tasks beyond the dashboard's 30-day window. */
+export function maintenanceScheduleCSV(items:Item[],today=new Date().toISOString().slice(0,10)):string {
+ const escape=(value:string|number)=>'"'+String(value).replaceAll('"','""')+'"';
+ const rows=[["Equipment","Category","Location","Task","Last Service","Interval Days","Next Service","Status"]];
+ for(const item of items){const due=nextServiceDate(item);if(!due)continue;rows.push([item.name,item.category,item.location,item.maintenanceTask??"",item.lastService??"",String(item.serviceIntervalDays??""),due,maintenanceStatus(item,today)]);}
+ return rows.map(row=>row.map(escape).join(",")).join("\r\n");
+}
