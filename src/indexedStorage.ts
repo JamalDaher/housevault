@@ -49,6 +49,24 @@ async function read(db:IDBDatabase):Promise<Item[]|undefined>{
  if(!Array.isArray(records))throw new Error("Invalid stored inventory");
  return hydrate(db,records);
 }
+export type AttachmentStorageStats={stored:number;referenced:number;orphaned:number;estimatedBytes:number};
+function referencedKeys(records:Item[]):Set<string>{
+ const keys=new Set<string>();
+ for(const item of records){if(item.photo?.startsWith(PREFIX))keys.add(item.photo);for(const photo of item.photos??[])if(photo.startsWith(PREFIX))keys.add(photo);for(const doc of item.documents??[])if(doc.data.startsWith(PREFIX))keys.add(doc.data);}
+ return keys;
+}
+export async function inspectAttachmentStorage():Promise<AttachmentStorageStats>{
+ const db=await openDatabase();
+ try{
+  const records=await requestResult(db.transaction(STORE,"readonly").objectStore(STORE).get(RECORD)) as Item[]|undefined;
+  if(records!==undefined&&!Array.isArray(records))throw new Error("Invalid inventory metadata");
+  const referenced=referencedKeys(records??[]);
+  const tx=db.transaction(ASSETS,"readonly");const store=tx.objectStore(ASSETS);
+  const [keys,values]=await Promise.all([requestResult(store.getAllKeys()),requestResult(store.getAll())]);
+  const estimatedBytes=values.reduce<number>((total,value:unknown)=>total+(typeof value==="string"?Math.floor(value.length*3/4):0),0);
+  return {stored:keys.length,referenced:referenced.size,orphaned:keys.filter(key=>typeof key==="string"&&!referenced.has(key)).length,estimatedBytes};
+ }finally{db.close();}
+}
 function write(db:IDBDatabase,items:Item[]):Promise<void>{
  const {records,assets}=extract(items);
  return new Promise((resolve,reject)=>{
@@ -56,6 +74,10 @@ function write(db:IDBDatabase,items:Item[]):Promise<void>{
   const assetStore=tx.objectStore(ASSETS);
   for(const [key,value] of assets){const get=assetStore.get(key);get.onsuccess=()=>{if(get.result!==value)assetStore.put(value,key);};}
   tx.objectStore(STORE).put(records,RECORD);
+  // Reclaim only unreferenced attachment keys, in the same atomic transaction as metadata.
+  const live=referencedKeys(records);
+  const cursorRequest=assetStore.openKeyCursor();
+  cursorRequest.onsuccess=()=>{const cursor=cursorRequest.result;if(!cursor)return;if(typeof cursor.key==="string"&&!live.has(cursor.key))assetStore.delete(cursor.key);cursor.continue();};
   tx.oncomplete=()=>resolve();
   tx.onerror=()=>reject(tx.error??new Error("Unable to save inventory"));
   tx.onabort=()=>reject(tx.error??new Error("Save aborted"));
