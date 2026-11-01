@@ -241,3 +241,6 @@ tbody tr:hover{background:#f8fbfe}
 .inventory-editor-dialog>.dialog-title{position:sticky!important;top:0!important;z-index:5;background:#fff;margin:0 -22px 16px;padding:18px 22px!important;border-bottom:1px solid #e5eaf1}
 .inventory-editor-dialog>.dialog-title+*{margin-top:0}
 @media(max-width:680px){.overlay>.inventory-editor-dialog{max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 16px)}}
+
+/* Editor heading scrolls naturally with the rest of the form on iPhone. */
+.inventory-editor-dialog>.dialog-title{position:static!important;top:auto!important;z-index:auto;}
