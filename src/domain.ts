@@ -20,3 +20,13 @@ export function csvExport(items: Item[]): string {
 /** Distinct location paths sorted for consistent filtering and autocomplete. */
 export function locationPaths(items: Item[]): string[] { return [...new Set(items.map(i=>i.location.trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b)); }
 export function normalizeLocation(path: string): string { return path.split("/").map(part=>part.trim()).filter(Boolean).join(" / "); }
+
+/** Includes every ancestor so a room can be browsed even if no item is stored directly in it. */
+export function locationTree(items: Item[]): string[] {
+ const paths=new Set<string>();
+ for(const item of items){const segments=normalizeLocation(item.location).split(" / ").filter(Boolean);for(let i=1;i<=segments.length;i++)paths.add(segments.slice(0,i).join(" / "));}
+ return [...paths].sort((a,b)=>a.localeCompare(b));
+}
+export function itemsAtLocation(items: Item[], location: string): Item[] {
+ const prefix=normalizeLocation(location);return prefix?items.filter(i=>{const path=normalizeLocation(i.location);return path===prefix||path.startsWith(prefix+" / ");}):items;
+}
