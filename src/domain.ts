@@ -156,3 +156,8 @@ export function missingItemDetails(item:Item):MissingDetail[] {
 export function incompleteInventory(items:Item[]):{item:Item;missing:MissingDetail[]}[] {
  return items.map(item=>({item,missing:missingItemDetails(item)})).filter(entry=>entry.missing.length>0).sort((a,b)=>b.missing.length-a.missing.length||a.item.name.localeCompare(b.item.name));
 }
+
+export function mostValuableItems(items:Item[],limit=5):{item:Item;total:number;share:number}[] {
+ const grandTotal=totalValue(items);
+ return items.map(item=>({item,total:item.value*item.quantity,share:grandTotal>0?item.value*item.quantity/grandTotal:0})).sort((a,b)=>b.total-a.total||a.item.name.localeCompare(b.item.name)).slice(0,Math.max(0,limit));
+}
