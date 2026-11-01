@@ -1,5 +1,5 @@
 export type Category = "Tools" | "Electronics" | "Appliances" | "Outdoor" | "Other";
-export type Item = { id: string; name: string; category: Category; location: string; quantity: number; value: number; notes: string; brand?: string; model?: string; serialNumber?: string; purchaseDate?: string; warrantyEnd?: string; };
+export type Item = { id: string; name: string; category: Category; location: string; quantity: number; value: number; notes: string; brand?: string; model?: string; serialNumber?: string; purchaseDate?: string; warrantyEnd?: string; maintenanceTask?: string; lastService?: string; serviceIntervalDays?: number; };
 export const categories: Category[] = ["Tools","Electronics","Appliances","Outdoor","Other"];
 export const seed: Item[] = [
 {id:"demo-1",name:"Portable Generator",category:"Tools",location:"Detached Garage",quantity:1,value:950,notes:"Demo record"},
@@ -45,7 +45,8 @@ export function parseBackup(raw: string): Item[] {
   if(!entry||typeof entry!=="object")throw new Error("Invalid inventory item.");
   const i=entry as Record<string,unknown>;
   if(typeof i.id!=="string"||!i.id.trim()||ids.has(i.id)||typeof i.name!=="string"||typeof i.location!=="string"||typeof i.notes!=="string"||typeof i.category!=="string"||!categories.includes(i.category as Category)||typeof i.quantity!=="number"||typeof i.value!=="number")throw new Error("Backup contains invalid or duplicate records.");
-  for(const field of ["brand","model","serialNumber","purchaseDate","warrantyEnd"])if(i[field]!==undefined&&typeof i[field]!=="string")throw new Error("Invalid optional item field.");
+  for(const field of ["brand","model","serialNumber","purchaseDate","warrantyEnd","maintenanceTask","lastService"])if(i[field]!==undefined&&typeof i[field]!=="string")throw new Error("Invalid optional item field.");
+  if(i.serviceIntervalDays!==undefined&&(!Number.isInteger(i.serviceIntervalDays)||Number(i.serviceIntervalDays)<1))throw new Error("Invalid maintenance interval.");
   const item=i as unknown as Item;
   if(!validItem(item))throw new Error("Backup contains invalid inventory values.");
   ids.add(item.id);return item;
@@ -59,4 +60,19 @@ export function warrantyStatus(item: Item, today = new Date().toISOString().slic
  if(end<today)return "expired";
  const days=Math.round((Date.parse(end+"T00:00:00Z")-Date.parse(today+"T00:00:00Z"))/86400000);
  return days<=30?"expiring":"active";
+}
+
+export type MaintenanceStatus = "unscheduled" | "upcoming" | "due" | "overdue";
+export function nextServiceDate(item: Item): string | null {
+ if(!item.lastService||!/^\d{4}-\d{2}-\d{2}$/.test(item.lastService)||!Number.isInteger(item.serviceIntervalDays)||!(typeof item.serviceIntervalDays==="number"&&item.serviceIntervalDays>0))return null;
+ const start=new Date(item.lastService+"T00:00:00Z");
+ if(Number.isNaN(start.getTime())||start.toISOString().slice(0,10)!==item.lastService)return null;
+ start.setUTCDate(start.getUTCDate()+item.serviceIntervalDays!);
+ return start.toISOString().slice(0,10);
+}
+export function maintenanceStatus(item: Item,today=new Date().toISOString().slice(0,10)): MaintenanceStatus {
+ const due=nextServiceDate(item);if(!due)return "unscheduled";
+ if(due<today)return "overdue";
+ const days=Math.round((Date.parse(due+"T00:00:00Z")-Date.parse(today+"T00:00:00Z"))/86400000);
+ return days===0?"due":days<=30?"upcoming":"unscheduled";
 }
