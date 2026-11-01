@@ -30,3 +30,24 @@ export function locationTree(items: Item[]): string[] {
 export function itemsAtLocation(items: Item[], location: string): Item[] {
  const prefix=normalizeLocation(location);return prefix?items.filter(i=>{const path=normalizeLocation(i.location);return path===prefix||path.startsWith(prefix+" / ");}):items;
 }
+
+export function exportBackup(items: Item[]): string {
+ return JSON.stringify({format:"housevault-backup",version:1,exportedAt:new Date().toISOString(),items},null,2);
+}
+export function parseBackup(raw: string): Item[] {
+ const data: unknown=JSON.parse(raw);
+ if(!data||typeof data!=="object")throw new Error("Invalid backup file.");
+ const backup=data as Record<string,unknown>;
+ if(backup.format!=="housevault-backup"||backup.version!==1||!Array.isArray(backup.items))throw new Error("Unsupported HouseVault backup format.");
+ if(backup.items.length>10000)throw new Error("Backup contains too many items.");
+ const ids=new Set<string>();
+ return backup.items.map((entry:unknown)=>{
+  if(!entry||typeof entry!=="object")throw new Error("Invalid inventory item.");
+  const i=entry as Record<string,unknown>;
+  if(typeof i.id!=="string"||!i.id.trim()||ids.has(i.id)||typeof i.name!=="string"||typeof i.location!=="string"||typeof i.notes!=="string"||typeof i.category!=="string"||!categories.includes(i.category as Category)||typeof i.quantity!=="number"||typeof i.value!=="number")throw new Error("Backup contains invalid or duplicate records.");
+  for(const field of ["brand","model","serialNumber","purchaseDate","warrantyEnd"])if(i[field]!==undefined&&typeof i[field]!=="string")throw new Error("Invalid optional item field.");
+  const item=i as Item;
+  if(!validItem(item))throw new Error("Backup contains invalid inventory values.");
+  ids.add(item.id);return item;
+ });
+}
