@@ -1,6 +1,6 @@
 /* global self, caches, URL, fetch, Response */
 /* HouseVault: cache only public application shell and static assets, never user inventory. */
-const CACHE="housevault-shell-v1";
+const CACHE="housevault-shell-v2";
 const ROOT="/housevault/";
 const SHELL=[ROOT,ROOT+"index.html",ROOT+"icon.svg",ROOT+"manifest.webmanifest"];
 self.addEventListener("install",event=>{
@@ -20,5 +20,5 @@ self.addEventListener("fetch",event=>{
   return;
  }
  if(!(/\.(?:js|css|svg|png|webp|woff2?|webmanifest)$/.test(url.pathname)))return;
- event.respondWith(caches.match(request).then(cached=>cached||fetch(request).then(response=>{if(response.ok){const copy=response.clone();void caches.open(CACHE).then(cache=>cache.put(request,copy));}return response;})));
+ event.respondWith(fetch(request).then(response=>{if(response.ok){const copy=response.clone();void caches.open(CACHE).then(cache=>cache.put(request,copy));}return response;}).catch(async()=>await caches.match(request)||Response.error()));
 });
