@@ -12,7 +12,7 @@ export const seed: Item[] = [
 {id:"demo-5",name:"Fishing Rod",category:"Outdoor",location:"Garage",quantity:3,value:85,notes:"Demo record"}];
 export function totalValue(items: Item[]): number { return items.reduce((sum,item)=>sum+item.value*item.quantity,0); }
 export function filterItems(items: Item[], query: string, category: string): Item[] {
- const q=query.trim().toLowerCase(); return items.filter(item=>(category==="All"||item.category===category)&&[item.name,item.location,item.notes,item.brand,item.model,item.serialNumber,item.maintenanceTask].some(s=>(s??"").toLowerCase().includes(q)));
+ const q=query.trim().toLowerCase(); return items.filter(item=>(category==="All"||item.category===category)&&[item.name,item.location,item.notes,item.brand,item.model,item.serialNumber,item.maintenanceTask,...(item.customFields??[]).flatMap(field=>[field.label,field.value])].some(s=>(s??"").toLowerCase().includes(q)));
 }
 export function validItem(item: Item): boolean { return Boolean((!item.customFields||item.customFields.length<=20&&item.customFields.every(f=>f.id.trim()&&f.label.trim()&&f.label.length<=60&&f.value.length<=500))&&item.name.trim()&&item.location.trim()&&Number.isFinite(item.value)&&item.value>=0&&Number.isInteger(item.quantity)&&item.quantity>0); }
 export function csvExport(items: Item[]): string {
