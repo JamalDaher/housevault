@@ -16,3 +16,5 @@
 .service-cost-panel{margin-bottom:24px}.service-cost-panel .panel-heading>strong{font-size:20px;white-space:nowrap}@media(max-width:680px){.service-cost-panel .panel-heading{flex-wrap:wrap}}
 
 .completeness-panel{margin-bottom:24px}.completeness-panel .panel-heading>strong{font-size:15px;white-space:nowrap}
+
+.valuable-panel{margin-bottom:24px}.valuable-panel .category-summary-row>strong small{font-weight:400}
