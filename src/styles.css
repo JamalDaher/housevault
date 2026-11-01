@@ -303,3 +303,26 @@ button:focus-visible,summary:focus-visible{outline:3px solid #0e968a;outline-off
  .inventory-tools>.backup-actions{right:auto;left:0;grid-template-columns:1fr 1fr}
 }
 @media(max-width:400px){.inventory-tools>.backup-actions{grid-template-columns:1fr}}
+
+
+/* Focused inventory: search and records first, advanced controls on demand. */
+.inventory-search-row{display:flex;align-items:stretch;gap:10px;padding:0 24px 16px;flex-wrap:wrap}
+.inventory-search-row>.search{min-width:180px;min-height:44px}
+.inventory-search-row>.secondary{white-space:nowrap}
+.inventory-advanced-filters[hidden],.saved-filters-toolbar[hidden],.bulk-toolbar[hidden],.equipment-select[hidden]{display:none!important}
+.inventory-advanced-filters{flex-wrap:wrap}
+.inventory-advanced-filters select{flex:1 1 160px;min-width:140px}
+.inventory-view-toggle{margin-top:0}
+.item-more-actions{position:relative;display:inline-block}
+.item-more-actions>summary{list-style:none;cursor:pointer;color:#147f78;font-weight:700}
+.item-more-actions>summary::-webkit-details-marker{display:none}
+.item-more-actions>div{position:absolute;right:0;top:calc(100% + 6px);z-index:18;min-width:165px;display:grid;gap:4px;background:#fff;border:1px solid #dce4ee;border-radius:12px;padding:8px;box-shadow:0 12px 32px #172b4829}
+.item-more-actions>div button{width:100%;text-align:left;justify-content:flex-start;white-space:nowrap;padding:8px 10px}
+.equipment-card-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.inventory-location-details>summary{list-style:none;cursor:pointer;padding:20px 24px;font-size:17px;font-weight:750;color:#27384d;display:flex;justify-content:space-between;gap:10px}
+.inventory-location-details>summary::-webkit-details-marker{display:none}
+.inventory-location-details>summary::after{content:"▾";color:#6b8093}
+.inventory-location-details[open]>summary::after{content:"▴"}
+.inventory-location-details>summary span{font-size:12px;color:#75859a;font-weight:400;margin-left:auto}
+.inventory-location-details>.panel-heading{padding-top:0}
+@media(max-width:680px){.inventory-search-row{padding:0 16px 16px}.inventory-search-row>.search{flex:1 1 100%}.inventory-search-row>.secondary{flex:1 1 auto}.inventory-advanced-filters{padding:0 16px 16px}.inventory-location-details>summary{padding:18px 16px}.inventory-location-details>summary span{display:none}}
