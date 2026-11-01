@@ -89,3 +89,8 @@ export function recordService(item:Item,record:ServiceRecord):Item {
  const latest=[item.lastService??"",record.date].sort().at(-1)!;
  return {...item,serviceHistory:history,lastService:latest};
 }
+
+export function maintenanceQueue(items:Item[],today=new Date().toISOString().slice(0,10)):Item[] {
+ const rank={overdue:0,due:1,upcoming:2,unscheduled:3};
+ return items.filter(i=>maintenanceStatus(i,today)!=="unscheduled").sort((a,b)=>rank[maintenanceStatus(a,today)]-rank[maintenanceStatus(b,today)]||(nextServiceDate(a)??"").localeCompare(nextServiceDate(b)??"")||a.name.localeCompare(b.name));
+}

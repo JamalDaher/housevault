@@ -1,5 +1,5 @@
 import { describe,it,expect } from "vitest";
-import { csvExport,exportBackup,parseBackup,filterItems,totalValue,validItem,seed,locationPaths,normalizeLocation,locationTree,itemsAtLocation,warrantyStatus,maintenanceStatus,nextServiceDate,recordService } from "../src/domain";
+import { csvExport,exportBackup,parseBackup,filterItems,totalValue,validItem,seed,locationPaths,normalizeLocation,locationTree,itemsAtLocation,warrantyStatus,maintenanceStatus,maintenanceQueue,nextServiceDate,recordService } from "../src/domain";
 describe("inventory domain",()=>{
 it("totals quantities correctly",()=>expect(totalValue([{...seed[0],quantity:2,value:100}])).toBe(200));
 it("filters by location and category",()=>expect(filterItems(seed,"workshop","Tools")).toHaveLength(1));
@@ -16,5 +16,6 @@ it("classifies warranty dates",()=>{const today="2026-11-01";expect(warrantyStat
 it("calculates next service date",()=>expect(nextServiceDate({...seed[0],lastService:"2026-01-01",serviceIntervalDays:30})).toBe("2026-01-31"));
 it("identifies overdue maintenance",()=>expect(maintenanceStatus({...seed[0],lastService:"2026-01-01",serviceIntervalDays:30},"2026-02-02")).toBe("overdue"));
 it("records service and updates last service",()=>{const result=recordService(seed[0],{id:"service-1",date:"2026-10-20",task:"Oil change",notes:"Done",cost:12});expect(result.lastService).toBe("2026-10-20");expect(result.serviceHistory).toHaveLength(1);expect(parseBackup(exportBackup([result]))[0].serviceHistory).toHaveLength(1);});
+it("prioritizes overdue service in maintenance queue",()=>{const a={...seed[0],lastService:"2026-01-01",serviceIntervalDays:30};const b={...seed[1],lastService:"2026-10-25",serviceIntervalDays:14};expect(maintenanceQueue([b,a],"2026-11-01").map(i=>i.id)).toEqual([a.id,b.id]);});
 it("handles empty lists",()=>expect(totalValue([])).toBe(0));
 });
