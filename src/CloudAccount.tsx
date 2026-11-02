@@ -1,3 +1,4 @@
+import type { Item } from "./domain";
 import { useEffect, useState, type FormEvent } from "react";
 import { createClient, type Session } from "@supabase/supabase-js";
 import SyncPreview from "./SyncPreview";
@@ -7,7 +8,7 @@ const url=import.meta.env.VITE_SUPABASE_URL;
 const key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const client=url&&key?createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 
-export default function CloudAccount(){
+export default function CloudAccount({onImportCloudItem}:{onImportCloudItem:(item:Item)=>void}){
  const [session,setSession]=useState<Session|null>(null);
  const [email,setEmail]=useState("");
  const [pendingEmail,setPendingEmail]=useState("");
@@ -171,7 +172,7 @@ export default function CloudAccount(){
     {householdLoading?<p role="status">Loading households…</p>:households.length?<ul className="account-household-list">{households.map(h=><li key={h.id}><span className="account-household-avatar" aria-hidden="true">⌂</span><div><strong>{h.name}</strong><small>{h.created_by===session.user.id?"Owner":"Member"}</small></div></li>)}</ul>:<p className="account-empty">No households yet. Create your first workspace below.</p>}
     <form className="account-inline-form" onSubmit={e=>void createHousehold(e)}><div><label htmlFor="household-name">New household</label><input id="household-name" required maxLength={120} value={householdName} onChange={e=>setHouseholdName(e.target.value)} placeholder="e.g. Our Home"/></div><button type="submit" disabled={householdBusy}>{householdBusy?"Creating…":"Create household"}</button></form>{householdError&&<p role="alert" className="account-feedback">{householdError}</p>}
    </div>
-   <SyncPreview session={session} households={households}/>
+   <SyncPreview session={session} households={households} onImportCloudItem={onImportCloudItem}/>
    <HouseholdTaxonomy session={session} households={households}/>
    <div className="account-card account-wide"><div className="account-section-heading"><div><span className="account-kicker">HOUSEHOLD ACCESS</span><h3>Members & permissions</h3><p>Review who belongs to each household. Owners can change viewer/editor roles or remove non-owner members.</p></div><span className="account-count">{members.length}</span></div>{households.length?households.map(h=><div className="account-members-group" key={h.id}><h4>{h.name}</h4><ul className="account-members-list">{members.filter(m=>m.household_id===h.id).map(m=><li key={m.user_id}><div className="account-member-identity"><span className="account-household-avatar" aria-hidden="true">♙</span><div><strong>{m.user_id===session.user.id?"You"+(m.display_name?" · "+m.display_name:""):m.display_name||m.email||"Household member"}</strong><small>{m.role==="owner"?"Owner":m.role==="editor"?"Editor":"Viewer"} · {m.email||"Email unavailable"}</small></div></div>{h.created_by===session.user.id&&m.role!=="owner"&&<div className="account-member-actions"><label className="account-visually-hidden" htmlFor={"member-role-"+m.user_id}>Member role</label><select id={"member-role-"+m.user_id} disabled={memberBusy} value={m.role} onChange={e=>void changeMemberRole(h.id,m.user_id,e.target.value as "viewer"|"editor")}><option value="viewer">Viewer</option><option value="editor">Editor</option></select><button type="button" className="secondary" disabled={memberBusy} onClick={()=>void removeMember(h.id,m.user_id)}>Remove</button></div>}</li>)}</ul></div>):<p className="account-empty">Create or join a household to see its members.</p>}{memberMessage&&<p role="status" className="account-feedback">{memberMessage}</p>}<form className="account-inline-form account-profile-name-form" onSubmit={e=>void saveProfileName(e)}><div><label htmlFor="account-display-name">Your display name (optional)</label><input id="account-display-name" maxLength={80} value={profileName} onChange={e=>setProfileName(e.target.value)} placeholder="e.g. Jamie"/></div><button type="submit" disabled={profileBusy}>{profileBusy?"Saving…":"Save name"}</button></form><p className="account-helper">Names and email addresses are visible to members of the same household. Owners cannot be demoted or removed here.</p></div>
    <div className="account-card"><div className="account-section-heading"><div><span className="account-kicker">FAMILY ACCESS</span><h3>Invite a member</h3><p>Choose a household and assign access. Invitations expire after seven days.</p></div></div>
