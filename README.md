@@ -201,3 +201,7 @@ After deploying migration `202611010009_household_taxonomy.sql`, Account → Cat
 ### Shared list refresh (PR #90)
 
 Account → Categories & locations re-fetches the selected household's categories and locations immediately after a successful add/remove RPC. The **Refresh lists** button fetches updates made by another family member without restarting the PWA. This is an explicit refresh, not a background real-time subscription, and does not yet populate the inventory item editor.
+
+### Shared categories and locations in the item editor
+
+When signed in, the Add/Edit Item form includes the selected household's shared categories alongside existing item categories and the built-in defaults. Location suggestions combine shared household paths with paths already used locally. Account → Categories & locations selects the household used by the editor; changes refresh without restarting. Item records remain local-first; this feature does not upload inventory. Existing custom categories are preserved by JSON backup/restore, CSV import, and reports.
