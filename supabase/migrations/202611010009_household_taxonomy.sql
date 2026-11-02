@@ -26,7 +26,7 @@ begin
   raise exception 'Not authorized' using errcode='42501';
  end if;
  cleaned:=btrim(target_value);
- if cleaned is null or length(cleaned)<1 or length(cleaned)>case when target_kind='category' then 60 else 240 end
+ if cleaned is null or length(cleaned)<1 or length(cleaned)>(case when target_kind='category' then 60 else 240 end)
  or target_kind not in ('category','location') or target_action not in ('add','remove') then
   raise exception 'Invalid category or location' using errcode='22023';
  end if;
