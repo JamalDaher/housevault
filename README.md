@@ -113,3 +113,7 @@ The first development phase adds [a safety-first rollout plan](docs/CLOUD_SYNC_P
 ### Phase 2: private family workspace backend (PR #63)
 
 The repository now includes a [draft Supabase database migration](supabase/migrations/202611010001_cloud_foundation.sql) for household membership, owner/editor/viewer roles, inventory record revisions, attachment metadata, and row-level access policies. See [backend setup and security blockers](supabase/README.md). **This schema is not deployed or connected to HouseVault.** Authentication, invitation acceptance, private file storage policies, concurrency safeguards, and security integration tests are required before cloud sync can be enabled. Existing IndexedDB data remains unchanged.
+
+### Phase 3: invitation security groundwork (PR #64)
+
+A second [draft Supabase migration](supabase/migrations/202611010002_family_invitations.sql) removes direct client membership writes and adds owner-only invitation creation/revocation and verified-email acceptance functions. Invitations expire after seven days and can grant editor or viewer access. **No invitation emails are sent and no sign-in or cloud sync is enabled yet.** This SQL has not been deployed or integration-tested against Supabase. Before enabling it, we must test real authentication, membership isolation, revoked access, account recovery, and private attachment storage. Existing local inventory remains unchanged.
