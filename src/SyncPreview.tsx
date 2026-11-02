@@ -17,9 +17,10 @@ export default function SyncPreview({session,households}:{session:Session;househ
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
  const [preview,setPreview]=useState<Preview|null>(null);
+ const [uploadMessage,setUploadMessage]=useState("");
  async function compare(){
   if(!client||!household||busy||!households.some(h=>h.id===household))return;
-  setBusy(true);setError("");setPreview(null);
+  setBusy(true);setError("");setUploadMessage("");setPreview(null);
   try{
    const local=await loadInventory();
    const {data,error:remoteError}=await client.from("inventory_records").select("item_id,payload,deleted_at").eq("household_id",household).limit(1001);
@@ -32,14 +33,38 @@ export default function SyncPreview({session,households}:{session:Session;househ
   }catch(e){setError(e instanceof Error?e.message:"Could not compare inventory.");}
   finally{setBusy(false);}
  }
+
+ async function uploadFirstCopy(){
+  if(!client||!household||busy||!preview||preview.household!==household||preview.decision!=="upload-local")return;
+  if(!window.confirm("Upload this device's inventory to the selected household? This creates cloud copies; it does not remove or replace local records. Back up your inventory first. Do not edit items on another device during this first upload."))return;
+  setBusy(true);setError("");setUploadMessage("");
+  try{
+   const local=parseBackup(exportBackup(await loadInventory()));
+   if(!local.length||local.length>1000)throw new Error("Only 1–1,000 valid records can be uploaded at once.");
+   if(attachmentCount(local)>0||local.some(item=>JSON.stringify(item).includes("hv-asset:")))throw new Error("Upload blocked: inventory includes photos or documents. Private attachment sync must be implemented first.");
+   const {data:membership,error:membershipError}=await client.from("household_members").select("role").eq("household_id",household).eq("user_id",session.user.id).single();
+   if(membershipError||!["owner","editor"].includes(membership?.role??""))throw new Error("Only household owners or editors can upload inventory.");
+   const {data:existing,error:readError}=await client.from("inventory_records").select("item_id").eq("household_id",household).limit(1);
+   if(readError||!existing||existing.length)throw new Error("Cloud inventory is no longer empty. Compare again before uploading.");
+   let completed=0;
+   for(const item of local){
+    const {error:writeError}=await client.rpc("put_inventory_record",{target_household:household,target_item:item.id,target_payload:item,expected_revision:0});
+    if(writeError)throw new Error("Upload stopped after "+completed+" records. Some records may already be in the cloud. Compare inventories before retrying; no local records were changed.");
+    completed++;
+   }
+   setUploadMessage("Uploaded "+completed+" records to your household. Your device inventory is unchanged. Automatic two-way sync is not yet enabled.");
+   setPreview(null);
+  }catch(e){setError(e instanceof Error?e.message:"Upload failed. Compare again.");setPreview(null);}
+  finally{setBusy(false);}
+ }
  return <div className="account-card account-wide">
-  <div className="account-section-heading"><div><span className="account-kicker">SYNC SETUP · PREVIEW ONLY</span><h3>Compare device and cloud inventory</h3><p>Review the two inventories before enabling synchronization. This check does not upload, download, or change any records.</p></div></div>
+  <div className="account-section-heading"><div><span className="account-kicker">SYNC SETUP · CONTROLLED FIRST UPLOAD</span><h3>Compare device and cloud inventory</h3><p>Review the two inventories before enabling synchronization. Comparison is read-only. First-time upload is available only after confirmation when the cloud is empty and local items contain no attachments.</p></div></div>
   <div className="account-inline-form"><div><label htmlFor="sync-household">Household</label><select id="sync-household" value={household} onChange={e=>{setHousehold(e.target.value);setPreview(null);setError("");}}><option value="">Select a household</option>{households.map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select></div><button type="button" disabled={!household||busy||!session.user.id} onClick={()=>void compare()}>{busy?"Comparing…":"Compare inventories"}</button></div>
-  {error&&<p role="alert" className="account-feedback">{error}</p>}
+  {error&&<p role="alert" className="account-feedback">{error}</p>}\n  {uploadMessage&&<p role="status" className="account-feedback">{uploadMessage}</p>}
   {preview&&preview.household===household&&<div className="account-sync-preview" role="status"><p><strong>On this device:</strong> {preview.localCount} records</p><p><strong>In the cloud:</strong> {preview.remoteCount} records</p>
    <p><strong>Assessment:</strong> {preview.decision==="upload-local"?"Local inventory exists; cloud inventory is empty.":preview.decision==="download-remote"?"Cloud inventory exists; device inventory is empty.":preview.decision==="identical"?"The records match.":preview.decision==="empty"?"Both inventories are empty.":"Differences need review before any transfer."}</p>
    {preview.decision==="review-required"&&<p>Device-only: {preview.localOnly} · Cloud-only: {preview.remoteOnly} · Changed: {preview.changed}</p>}
    {preview.attachments>0&&<p><strong>Attachment warning:</strong> {preview.attachments} local photo/document references require private attachment storage before full synchronization.</p>}
-   <p><strong>No transfer has occurred.</strong> First-time upload/download and ongoing sync are not enabled yet. Export a JSON backup before any future transfer.</p></div>}
+   <p><strong>No transfer has occurred from comparison.</strong> Export a JSON backup before any upload. Automatic two-way sync and downloading are not yet enabled.</p>\n   {preview.decision==="upload-local"&&preview.attachments===0&&<button type="button" className="secondary" disabled={busy} onClick={()=>void uploadFirstCopy()}>{busy?"Uploading…":"Upload first cloud copy (confirmation required)"}</button>}</div>}
  </div>;
 }
