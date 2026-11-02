@@ -209,3 +209,7 @@ When signed in, the Add/Edit Item form includes the selected household's shared 
 ### First cloud inventory upload (PR #92)
 
 Account → Compare inventories offers an explicitly confirmed first upload only when the selected household has zero cloud records and this device has valid local inventory without photos or documents. Only owners/editors can upload. Writes use the existing revision-checked Supabase RPC, and local inventory is never overwritten. Uploading multiple records is not atomic: if a write fails, already uploaded records remain; compare again before retrying. Cloud download, attachment transfer, conflict resolution and automatic two-way sync are **not enabled** yet. Export a JSON backup before starting.
+
+### Private attachment upload (PR #93)
+
+Apply migration `202611020010_private_attachment_storage.sql` before using first upload. The private `housevault-attachments` bucket enforces household membership for reads and owner/editor permission for uploads. JPEG, PNG, WebP and PDF attachments (up to 10 MB each) upload before their inventory record; cloud payloads contain private `cloud-asset:` paths, not inline data. The original device data remains unchanged. **No cloud-to-device attachment download or automatic two-way sync yet.** Interrupted uploads can leave partial inventory and unreferenced private files; compare and review before retrying. Export a local JSON backup first.
