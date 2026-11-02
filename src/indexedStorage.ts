@@ -138,7 +138,16 @@ export function replaceImportedItem(item:Item,expected:Item):Promise<void>{
    const existing=await read(db);
    const current=existing?.find(entry=>entry.id===item.id);
    if(!current||JSON.stringify(current)!==baseline)throw new Error("Device record changed. Compare again; nothing was replaced.");
+   // A fresh attachment namespace preserves prior bytes even if the new record uses the same photo slots.
    const extracted=extract([replacement]);
+   const replacementAssets=new Map<string,string>();
+   const namespace=crypto.randomUUID();
+   const remap=new Map<string,string>();
+   for(const [key,value] of extracted.assets){const freshKey=key+":"+namespace;remap.set(key,freshKey);replacementAssets.set(freshKey,value);}
+   const record=extracted.records[0];
+   if(record.photo&&remap.has(record.photo))record.photo=remap.get(record.photo)!;
+   if(record.photos)record.photos=record.photos.map(p=>remap.get(p)??p);
+   if(record.documents)record.documents=record.documents.map(d=>({...d,data:remap.get(d.data)??d.data}));
    await new Promise<void>((resolve,reject)=>{
     const tx=db.transaction([STORE,ASSETS],"readwrite");
     const records=tx.objectStore(STORE),assets=tx.objectStore(ASSETS);
@@ -150,8 +159,8 @@ export function replaceImportedItem(item:Item,expected:Item):Promise<void>{
      const old=raw.find(entry=>entry.id===item.id)!;
      const expectedKeys=extract([expected]).records[0];
      if(JSON.stringify(old)!==JSON.stringify(expectedKeys)){tx.abort();return;}
-     for(const [key,value] of extracted.assets)assets.put(value,key);
-     records.put(raw.map(entry=>entry.id===item.id?extracted.records[0]:entry),RECORD);
+     for(const [key,value] of replacementAssets)assets.put(value,key);
+     records.put(raw.map(entry=>entry.id===item.id?record:entry),RECORD);
     };
     tx.oncomplete=()=>resolve();
     tx.onerror=()=>reject(tx.error??new Error("Device replacement failed"));
