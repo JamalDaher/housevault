@@ -169,3 +169,7 @@ On narrow screens the seven main navigation destinations now use a compact four-
 ### Compact mobile header (PR #78)
 
 Reduce the iPhone masthead footprint with smaller branding, tighter navigation spacing and shorter navigation buttons while retaining all seven visible destinations in a four-column, two-row grid. Desktop layout and stored inventory are unchanged.
+
+### Collapsible mobile navigation (PR #79)
+
+The mobile header now shows the current section and a Menu control instead of permanently showing all seven destinations. Tapping Menu opens a two-column section picker; selecting a destination closes it. Desktop navigation remains a persistent sidebar. No inventory storage or cloud authentication behavior changes.
