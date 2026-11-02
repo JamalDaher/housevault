@@ -435,3 +435,19 @@ main:has(.quick-actions:not([hidden]))>header h1{font-size:clamp(24px,5vw,30px);
  .sidebar nav button svg{width:16px;height:16px}
  main{padding-top:18px}
 }
+
+
+/* Mobile-first collapsible navigation: short header, full menu on demand. */
+.mobile-menu-toggle{display:none}
+@media(max-width:680px){
+ .sidebar{padding:9px 12px 10px}
+ .sidebar .brand{margin-bottom:8px}
+ .mobile-menu-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:39px;padding:8px 12px;background:#20394e;color:#edf8fa;border:1px solid #38556a;border-radius:10px;font-size:12px;font-weight:750;text-align:left}
+ .mobile-menu-toggle span:last-child{color:#81dfce}
+ .mobile-menu-toggle:focus-visible{outline:2px solid #72d8c5;outline-offset:2px}
+ .sidebar nav{display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:7px;padding:7px;background:#172c40;border:1px solid #30495d;border-radius:11px;overflow:visible}
+ .sidebar nav.mobile-nav-open{display:grid}
+ .sidebar nav button{display:flex;flex-direction:row;justify-content:flex-start;align-items:center;min-height:43px;padding:9px 10px;gap:8px;text-align:left;font-size:12px}
+ .sidebar nav button svg{width:17px;height:17px}
+ main{padding-top:14px}
+}
