@@ -55,8 +55,8 @@ export default function SyncPreview({session,households}:{session:Session;househ
    if(remoteError)throw new Error("Could not read household inventory. Please check your connection and permissions.");
    if(!data||data.length>1000)throw new Error("The cloud inventory exceeds the 1,000-record preview limit.");
    const remote=data.filter(row=>!row.deleted_at).map(row=>row.payload as Item);
-   const cleanRemote=parseBackup(exportBackup(remote));
-   const decision=decideInitialSync(local,cleanRemote);
+   const cleanRemote=remote;
+   const decision=decideInitialSync(local.map(item=>({...item,photo:undefined,photos:undefined,documents:undefined})),cleanRemote.map(item=>({...item,photo:undefined,photos:undefined,documents:undefined})));
    setPreview({localCount:local.length,remoteCount:cleanRemote.length,decision:decision.kind,localOnly:"localOnly" in decision?decision.localOnly:0,remoteOnly:"remoteOnly" in decision?decision.remoteOnly:0,changed:"changed" in decision?decision.changed:0,attachments:attachmentCount(local),household});
   }catch(e){setError(e instanceof Error?e.message:"Could not compare inventory.");}
   finally{setBusy(false);}
@@ -67,8 +67,8 @@ export default function SyncPreview({session,households}:{session:Session;househ
   if(!window.confirm("Upload this device's inventory to the selected household? This creates cloud copies; it does not remove or replace local records. Back up your inventory first. Do not edit items on another device during this first upload."))return;
   setBusy(true);setError("");setUploadMessage("");
   try{
-   const local=parseBackup(exportBackup(await loadInventory()));
-   if(!local.length||local.length>1000)throw new Error("Only 1–1,000 valid records can be uploaded at once.");
+   const local=await loadInventory();
+   if(!local.length||local.length>1000)throw new Error("Only 1–1,000 records can be uploaded at once.");
    if(local.some(item=>JSON.stringify(item).includes("hv-asset:")))throw new Error("Some attachments are unavailable in local storage. Export a backup and inspect these items before uploading.");
    const {data:membership,error:membershipError}=await client.from("household_members").select("role").eq("household_id",household).eq("user_id",session.user.id).single();
    if(membershipError||!["owner","editor"].includes(membership?.role??""))throw new Error("Only household owners or editors can upload inventory.");
