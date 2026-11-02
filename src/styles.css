@@ -406,3 +406,18 @@ main:has(.quick-actions:not([hidden]))>header h1{font-size:clamp(24px,5vw,30px);
 .account-backup-reminder{display:flex;align-items:flex-start;gap:12px;margin-top:18px}
 .account-code-form{margin-top:20px;border-top:1px solid #e6edf1;padding-top:18px}
 @media(max-width:760px){.account-content{padding:14px}.account-workspace{grid-template-columns:minmax(0,1fr)}.account-profile-card{padding:18px;flex-wrap:wrap}.account-state-pill{margin-left:0}.account-card{padding:17px}.account-inline-form{flex-direction:column;align-items:stretch}.account-inline-form>div{width:100%}.account-invite-token{flex-wrap:wrap}.account-invite-token code{flex-basis:100%}}
+
+
+/* iPhone navigation: all seven sections visible, no horizontal swiping. */
+@media(max-width:680px){
+ .sidebar{padding:13px 12px 12px}
+ .sidebar .brand{margin-bottom:12px}
+ .sidebar nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;overflow:visible;padding:0}
+ .sidebar nav button{width:100%;min-width:0;min-height:58px;margin:0;padding:8px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center;white-space:normal;font-size:10px;line-height:1.15;border-radius:10px}
+ .sidebar nav button svg{width:19px;height:19px;flex:none}
+ .sidebar nav button.active{background:#284a5c;box-shadow:inset 0 0 0 1px #4d9d9c}
+}
+@media(max-width:370px){
+ .sidebar nav{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+ .sidebar nav button{font-size:9px;padding:7px 2px}
+}
