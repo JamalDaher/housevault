@@ -105,3 +105,7 @@ In the **Inventory** view, tap **Scan QR** to open the built-in camera scanner. 
 ### Cleaner dashboard and quick actions
 
 The Overview dashboard now has one-tap **Scan equipment**, **Add equipment**, and **Browse inventory** shortcuts. The Inventory screen keeps **Scan QR** visible while grouping less-frequent CSV, backup, and print commands under **Import, export & print**. These changes only reorganize the interface; they do not change inventory storage or attachment handling.
+
+## Cloud Sync & Family Accounts (in development)
+
+The first development phase adds [a safety-first rollout plan](docs/CLOUD_SYNC_PLAN.md), initial synchronization decision logic, and family-role tests. **No cloud account or automatic synchronization is active yet.** All current inventory, photos, documents, and maintenance records remain in the existing device storage. Future phases will require explicit user opt-in and a verified backup before first migration.
