@@ -60,9 +60,8 @@ create policy households_read on public.households for select to authenticated
  using(public.household_role(id) is not null);
 create policy households_create on public.households for insert to authenticated
  with check(created_by=(select auth.uid()));
-create policy households_update on public.households for update to authenticated
- using(public.household_role(id)='owner')
- with check(public.household_role(id)='owner');
+-- Household identity and creator are immutable. Name edits use a separate audited RPC later.
+-- No direct client UPDATE policy on households.
 
 create policy members_read on public.household_members for select to authenticated
  using(public.household_role(household_id) is not null);
@@ -76,21 +75,13 @@ create policy members_remove on public.household_members for delete to authentic
 
 create policy inventory_read on public.inventory_records for select to authenticated
  using(public.household_role(household_id) is not null);
-create policy inventory_insert on public.inventory_records for insert to authenticated
- with check(public.household_role(household_id) in ('owner','editor') and updated_by=(select auth.uid()));
-create policy inventory_update on public.inventory_records for update to authenticated
- using(public.household_role(household_id) in ('owner','editor'))
- with check(public.household_role(household_id) in ('owner','editor') and updated_by=(select auth.uid()));
+-- Block client writes until revision-checked RPCs and payload validation are implemented.
+-- Direct UPDATE permits revision forgery and lost updates even with RLS.
+-- No inventory INSERT or UPDATE policy is deliberately installed yet.
 
 create policy attachments_read on public.inventory_attachments for select to authenticated
  using(public.household_role(household_id) is not null);
-create policy attachments_insert on public.inventory_attachments for insert to authenticated
- with check(public.household_role(household_id) in ('owner','editor'));
-create policy attachments_update on public.inventory_attachments for update to authenticated
- using(public.household_role(household_id) in ('owner','editor'))
- with check(public.household_role(household_id) in ('owner','editor'));
-create policy attachments_delete on public.inventory_attachments for delete to authenticated
- using(public.household_role(household_id) in ('owner','editor'));
+-- Attachment metadata writes are disabled pending private Storage policies and audited RPCs.
 
 -- Bootstrap must be transactional and server-side; clients cannot self-assign owner.
 -- The owner is added by a trigger using the trusted households.created_by value.
@@ -126,3 +117,7 @@ execute function public.protect_last_household_owner();
 
 -- Before production: add invitation acceptance, optimistic concurrency enforcement,
 -- server-side payload validation, storage.objects RLS, and end-to-end authorization tests.
+
+-- Prevent accidental client execution of trigger functions; triggers remain functional.
+revoke all on function public.bootstrap_household_owner() from public;
+revoke all on function public.protect_last_household_owner() from public;
