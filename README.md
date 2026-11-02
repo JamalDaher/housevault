@@ -141,3 +141,7 @@ The Account page includes optional Supabase passwordless email sign-in/sign-out,
 ### GitHub Pages authentication configuration (PR #70)
 
 The deploy workflow supplies the **public** Supabase project URL and publishable API key at build time. These values are safe to embed in the browser; **never** add secret/service-role keys. Before email sign-in can complete, configure Supabase Dashboard → Authentication → URL Configuration with Site URL `https://jamaldaher.github.io/housevault/` and allow the same exact redirect URL. Verify email provider settings and test with a dedicated test account. Sign-in does not upload, merge, or sync any inventory. Avoid using real family accounts until authenticated RLS isolation tests are complete.
+
+### Household management (PR #71)
+
+Signed-in users can list households visible under existing Supabase RLS and create a new named household. The existing database trigger creates the initial owner membership; the browser cannot directly edit household membership. Households are future cloud workspaces and **do not upload or sync device inventory**. Invitations, member role management, and inventory sync remain disabled. A household list is only as secure as the server RLS policies; cross-user authorization testing remains a prerequisite for inviting family members.
