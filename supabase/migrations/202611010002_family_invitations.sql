@@ -4,6 +4,8 @@
 drop policy if exists members_add on public.household_members;
 drop policy if exists members_edit on public.household_members;
 drop policy if exists members_remove on public.household_members;
+-- Explicitly remove table-level writes as defense in depth.
+revoke insert, update, delete on public.household_members from anon, authenticated;
 
 create table public.household_invitations (
  id uuid primary key default gen_random_uuid(),
@@ -81,3 +83,6 @@ revoke all on function public.revoke_household_invitation(uuid) from public;
 grant execute on function public.create_household_invitation(uuid,text,text) to authenticated;
 grant execute on function public.accept_household_invitation(uuid) to authenticated;
 grant execute on function public.revoke_household_invitation(uuid) to authenticated;
+
+-- Invite writes must go through RPCs, not direct table grants.
+revoke insert, update, delete on public.household_invitations from anon, authenticated;
