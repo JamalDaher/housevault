@@ -81,7 +81,7 @@ export default function CloudAccount(){
   event.preventDefault();if(!client||!session||householdBusy)return;
   const name=householdName.trim();if(!name||name.length>120){setHouseholdError("Enter a household name of 1–120 characters.");return;}
   setHouseholdBusy(true);setHouseholdError("");
-  const {data,error}=await client.from("households").insert({name,created_by:session.user.id}).select("id,name,created_by").single();
+  const {data,error}=await client.rpc("create_household",{target_name:name}).single();
   if(error||!data){setHouseholdError("Could not create household. Check your connection and try again.");}
   else{setHouseholds(old=>old.some(h=>h.id===data.id)?old:[...old,data]);setHouseholdName("");setMessage("Household created. Inventory is still stored only on this device.");}
   setHouseholdBusy(false);
