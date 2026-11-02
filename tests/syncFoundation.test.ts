@@ -33,3 +33,15 @@ describe("read-only sync audit",()=>{
   expect(result.invalid).toBe(1);
  });
 });
+
+describe("jsonb-compatible comparisons",()=>{
+ it("ignores object key order at all nesting levels",()=>{
+  const a=[{...seed[0],customFields:[{id:"x",label:"Color",value:"Blue"}]}];
+  const b=[{customFields:[{value:"Blue",label:"Color",id:"x"}],notes:seed[0].notes,value:seed[0].value,quantity:seed[0].quantity,location:seed[0].location,category:seed[0].category,name:seed[0].name,id:seed[0].id}];
+  expect(decideInitialSync(a,b).kind).toBe("identical");
+  expect(compareEquipmentMetadata(a,b).kind).toBe("identical");
+ });
+ it("still identifies real field changes",()=>{
+  expect(compareEquipmentMetadata(seed,[{...seed[0],value:seed[0].value+1},...seed.slice(1)]).kind).toBe("review-required");
+ });
+});

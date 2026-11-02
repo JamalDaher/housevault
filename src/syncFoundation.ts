@@ -12,9 +12,20 @@ export type SyncDecision =
  | { kind:"identical"; localCount:number; remoteCount:number }
  | { kind:"review-required"; localCount:number; remoteCount:number; localOnly:number; remoteOnly:number; changed:number };
 
+function stableValue(value:unknown):unknown {
+ if(Array.isArray(value))return value.map(stableValue);
+ if(value!==null&&typeof value==="object"){
+  return Object.fromEntries(Object.entries(value as Record<string,unknown>)
+   .filter(([,entry])=>entry!==undefined)
+   .sort(([a],[b])=>a<b?-1:a>b?1:0)
+   .map(([key,entry])=>[key,stableValue(entry)]));
+ }
+ return value;
+}
 function canonical(item:Item):string {
- // Key order is deterministic for JSON data produced by the same application.
- return JSON.stringify(item);
+ // PostgreSQL jsonb can reorder object keys at every nesting level.
+ // Sort object keys recursively while preserving array order and values.
+ return JSON.stringify(stableValue(item));
 }
 export function decideInitialSync(local:Item[],remote:Item[]):SyncDecision {
  // Validate both sides with the same strict backup validator already used by restore.
