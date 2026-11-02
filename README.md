@@ -161,3 +161,7 @@ Signed-in household owners can create 7-day invitations for verified email addre
 ### Account interface refresh (PR #76)
 
 Account & Family now uses a responsive account profile banner, clear sign-in state, dedicated household cards, invitation creation and management, invitation ID copy controls, and a private accept-invitation form. The outdated 'no account connected' copy was removed. Local-only inventory and backup guidance remain prominent. The redesign changes presentation only; Supabase authorization RPCs, storage, and sync behavior are unchanged.
+
+### Mobile navigation (PR #77)
+
+On narrow screens the seven main navigation destinations now use a compact four-column, two-row touch-friendly grid, rather than a horizontally scrolling strip. All destinations are visible at once on iPhone; desktop sidebar navigation is unchanged. This is a CSS-only layout update and does not affect device inventory or cloud access.
