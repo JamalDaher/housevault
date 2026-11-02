@@ -109,3 +109,7 @@ The Overview dashboard now has one-tap **Scan equipment**, **Add equipment**, an
 ## Cloud Sync & Family Accounts (in development)
 
 The first development phase adds [a safety-first rollout plan](docs/CLOUD_SYNC_PLAN.md), initial synchronization decision logic, and family-role tests. **No cloud account or automatic synchronization is active yet.** All current inventory, photos, documents, and maintenance records remain in the existing device storage. Future phases will require explicit user opt-in and a verified backup before first migration.
+
+### Phase 2: private family workspace backend (PR #63)
+
+The repository now includes a [draft Supabase database migration](supabase/migrations/202611010001_cloud_foundation.sql) for household membership, owner/editor/viewer roles, inventory record revisions, attachment metadata, and row-level access policies. See [backend setup and security blockers](supabase/README.md). **This schema is not deployed or connected to HouseVault.** Authentication, invitation acceptance, private file storage policies, concurrency safeguards, and security integration tests are required before cloud sync can be enabled. Existing IndexedDB data remains unchanged.
