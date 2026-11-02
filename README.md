@@ -173,3 +173,7 @@ Reduce the iPhone masthead footprint with smaller branding, tighter navigation s
 ### Collapsible mobile navigation (PR #79)
 
 The mobile header now shows the current section and a Menu control instead of permanently showing all seven destinations. Tapping Menu opens a two-column section picker; selecting a destination closes it. Desktop navigation remains a persistent sidebar. No inventory storage or cloud authentication behavior changes.
+
+### Household member management (PR #80)
+
+The Account page lists household members and their viewer/editor/owner roles. Owners can change non-owner roles between viewer and editor or remove non-owner members through `set_household_member_role` and `remove_household_member` authenticated Supabase RPCs. These functions require owner authorization, reject owner demotion/removal, and keep direct client membership writes revoked. **Deploy `supabase/migrations/202611010004_member_management.sql` to the HouseVault Supabase project before testing the action buttons.** The roster shows abbreviated member IDs, not other users' private email addresses. Inventory remains local and is not shared. Cross-account authorization tests are required before cloud sync.
