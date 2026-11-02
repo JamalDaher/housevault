@@ -165,3 +165,7 @@ Account & Family now uses a responsive account profile banner, clear sign-in sta
 ### Mobile navigation (PR #77)
 
 On narrow screens the seven main navigation destinations now use a compact four-column, two-row touch-friendly grid, rather than a horizontally scrolling strip. All destinations are visible at once on iPhone; desktop sidebar navigation is unchanged. This is a CSS-only layout update and does not affect device inventory or cloud access.
+
+### Compact mobile header (PR #78)
+
+Reduce the iPhone masthead footprint with smaller branding, tighter navigation spacing and shorter navigation buttons while retaining all seven visible destinations in a four-column, two-row grid. Desktop layout and stored inventory are unchanged.
