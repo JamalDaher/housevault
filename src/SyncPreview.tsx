@@ -110,6 +110,30 @@ export default function SyncPreview({session,households}:{session:Session;househ
   finally{setBusy(false);}
  }
 
+ async function uploadApprovedNewRecord(id:string){
+  if(!client||busy||!preview||preview.household!==household||choices[id]!=="keep-device"||!preview.conflicts.some(c=>c.id===id&&c.status==="device-only"))return;
+  if(!window.confirm("Create a cloud copy of this device-only record? This will not change your device inventory or overwrite an existing cloud record. Keep a backup first."))return;
+  setBusy(true);setError("");setUploadMessage("");
+  try{
+   const local=await loadInventory();
+   const item=local.find(entry=>entry.id===id);
+   if(!item)throw new Error("The device record changed. Compare again.");
+   const {data:membership,error:memberError}=await client.from("household_members").select("role").eq("household_id",household).eq("user_id",session.user.id).single();
+   if(memberError||!["owner","editor"].includes(membership?.role??""))throw new Error("Only owners and editors can upload records.");
+   const {data:existing,error:readError}=await client.from("inventory_records").select("item_id").eq("household_id",household).eq("item_id",id).limit(1);
+   if(readError||!existing)throw new Error("Unable to check cloud revision.");
+   if(existing.length)throw new Error("This record now exists in the cloud. Compare again; nothing was overwritten.");
+   const payload=await prepareCloudItem(item,household);
+   const fresh=(await loadInventory()).find(entry=>entry.id===id);
+   if(!fresh||JSON.stringify(fresh)!==JSON.stringify(item))throw new Error("Device record changed during upload preparation. No cloud record was written.");
+   const {error:writeError}=await client.rpc("put_inventory_record",{target_household:household,target_item:id,target_payload:payload,expected_revision:0});
+   if(writeError)throw new Error("Cloud rejected the record or its revision changed. No device records were changed; uploaded attachment files may need cleanup.");
+   setUploadMessage("Created one new cloud record. Device inventory unchanged. Compare again to refresh differences.");
+   setPreview(null);setChoices({});
+  }catch(e){setError(e instanceof Error?e.message:"Unable to create cloud record.");setPreview(null);}
+  finally{setBusy(false);}
+ }
+
  async function uploadFirstCopy(){
   if(!client||!household||busy||!preview||preview.household!==household||preview.decision!=="upload-local")return;
   if(!window.confirm("Upload this device's inventory to the selected household? This creates cloud copies; it does not remove or replace local records. Back up your inventory first. Do not edit items on another device during this first upload."))return;
@@ -144,7 +168,7 @@ export default function SyncPreview({session,households}:{session:Session;househ
    {preview.conflicts.length>0&&<div><h4>Review equipment differences</h4><p>Read-only preview. No device or cloud records will be changed.</p><ul>{preview.conflicts.slice(0,25).map(conflict=><li key={conflict.id}><strong>{conflict.name}</strong> — {conflict.status==="different"?"Different fields: "+conflict.fields.join(", "):conflict.status==="device-only"?"Only on this device":"Only in cloud"}</li>)}</ul>{preview.conflicts.length>25&&<p>Showing 25 of {preview.conflicts.length} records.</p>}</div>}
    {preview.conflicts.length>0&&<div>
     <h4>Prepare conflict decisions</h4>
-    <p>Review plan only. No records are changed.</p>
+    <p>For device-only records, you can explicitly create one new cloud record at a time. Other decisions remain review-only; no existing cloud records are overwritten.</p>
     {preview.conflicts.map(conflict=><div key={conflict.id} className="account-inline-form">
      <label htmlFor={"conflict-"+conflict.id}>{conflict.name}</label>
      <select id={"conflict-"+conflict.id} value={choices[conflict.id]??""} onChange={e=>setChoices(previous=>({...previous,[conflict.id]:e.target.value as ConflictChoice}))}>
@@ -153,6 +177,7 @@ export default function SyncPreview({session,households}:{session:Session;househ
       <option value="keep-cloud">Keep cloud version</option>
       <option value="skip">Skip for now</option>
      </select>
+     {conflict.status==="device-only"&&choices[conflict.id]==="keep-device"&&<button type="button" className="secondary" disabled={busy} onClick={()=>void uploadApprovedNewRecord(conflict.id)}>Upload this new record (confirmation required)</button>}
     </div>)}
     {validateConflictApprovals(preview.conflicts,Object.entries(choices).map(([id,choice])=>({id,choice})))&&
      <p role="status">Review plan complete. No changes have been applied.</p>}
