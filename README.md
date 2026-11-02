@@ -129,3 +129,7 @@ The connected **HouseVault** Supabase project exists in US East (Ohio), but **th
 ### Supabase database deployment (PR #67)
 
 The HouseVault Supabase project now has the five empty household, membership, invitation, inventory, and attachment metadata tables from the first two migrations, with RLS enabled. The third deployed migration explicitly revokes anonymous execution of privileged functions and prevents authenticated users from invoking trigger functions directly. The security advisor still flags **four intentionally callable authenticated SECURITY DEFINER RPCs**; they require dedicated authorization tests and further review before family accounts launch. No local inventory was uploaded; browser cloud sync remains disabled. This PR tracks the deployed permissions in GitHub.
+
+### Supabase live permission smoke test (PR #68)
+
+Run the read-only SQL in [supabase/tests/security_smoke.sql](supabase/tests/security_smoke.sql) in the connected HouseVault project's SQL editor. **Zero returned rows means its configuration checks pass.** It checks the five RLS-enabled tables, anonymous access to privileged functions, authenticated trigger-function access, direct membership/invitation writes, and disabled inventory/attachment write policies. This query was run against the live empty project and returned zero failures. It **does not** prove cross-account RLS isolation or the safety of authenticated invitation RPCs; those need dedicated integration tests before enabling sign-in or cloud sync. Local inventory remains unchanged.
