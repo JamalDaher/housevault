@@ -20,3 +20,9 @@ This directory contains a **draft Supabase PostgreSQL migration** for HouseVault
 7. **Migration**: implement explicit first-sync preview and verified JSON backup before transferring local data.
 
 The GitHub Pages app remains offline-first and fully local. Applying SQL alone does not enable sync.
+
+## Phase 3 invitation RPCs
+
+Apply the second migration **only in a test environment** after the first. It removes direct authenticated-client INSERT/UPDATE/DELETE policies on memberships, replacing self-service invitations with owner-only creation/revocation and authenticated verified-email acceptance. Invitation UUIDs are not automatically emailed; email delivery and a complete acceptance UI are future work. The RPC does not expose the invited email to other household members.
+
+**Still required before launch:** real Supabase integration tests; audit and harden SECURITY DEFINER function permissions; test verified-email and revoked/expired invitations; ensure owners can securely remove or change existing members through dedicated audited RPCs; implement invitation email delivery and private Storage policies. Existing role and last-owner rules must be tested for concurrent transactions.
