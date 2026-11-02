@@ -157,3 +157,7 @@ The OTP field uses a length-neutral placeholder rather than a misleading six-dig
 ### Household invitations (PR #75)
 
 Signed-in household owners can create 7-day invitations for verified email addresses, assign viewer/editor roles, review invitation IDs and revoke pending invitations. A recipient signs in with the matching verified email and enters the invitation UUID to accept. This uses deployed Supabase RPCs (`create_household_invitation`, `accept_household_invitation`, `revoke_household_invitation`) and existing RLS; the browser never writes membership records directly. **Invitations are not emailed automatically**: owners must securely share the invitation ID. Invite IDs are sensitive; do not post them publicly. Roles prepare for future sharing but **inventory remains device-local** and is not accessible to other household members yet. Test cross-account permissions before any cloud sync rollout.
+
+### Account interface refresh (PR #76)
+
+Account & Family now uses a responsive account profile banner, clear sign-in state, dedicated household cards, invitation creation and management, invitation ID copy controls, and a private accept-invitation form. The outdated 'no account connected' copy was removed. Local-only inventory and backup guidance remain prominent. The redesign changes presentation only; Supabase authorization RPCs, storage, and sync behavior are unchanged.
