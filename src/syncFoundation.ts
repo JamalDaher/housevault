@@ -71,3 +71,21 @@ export function cloudAttachmentPaths(items:Item[],household:string):{paths:strin
  }
  return {paths:[...new Set(paths)],invalid};
 }
+
+export type RecordConflict={id:string;name:string;status:"device-only"|"cloud-only"|"different";fields:string[]};
+/** Read-only, deterministic record-level diff. No merge or write permissions. */
+export function previewRecordConflicts(local:Item[],remote:Item[]):RecordConflict[]{
+ const byLocal=new Map(local.map(item=>[item.id,item]));
+ const byRemote=new Map(remote.map(item=>[item.id,item]));
+ const conflicts:RecordConflict[]=[];
+ const strip=(item:Item)=>{const {photo:_photo,photos:_photos,documents:_documents,...rest}=item;void _photo;void _photos;void _documents;return rest as Record<string,unknown>;};
+ for(const id of [...new Set([...byLocal.keys(),...byRemote.keys()])].sort()){
+  const a=byLocal.get(id),b=byRemote.get(id);
+  if(!a){conflicts.push({id,name:b!.name,status:"cloud-only",fields:[]});continue;}
+  if(!b){conflicts.push({id,name:a.name,status:"device-only",fields:[]});continue;}
+  const left=strip(a),right=strip(b);
+  const fields=[...new Set([...Object.keys(left),...Object.keys(right)])].sort().filter(key=>JSON.stringify(stableValue(left[key]))!==JSON.stringify(stableValue(right[key])));
+  if(fields.length)conflicts.push({id,name:a.name,status:"different",fields});
+ }
+ return conflicts;
+}

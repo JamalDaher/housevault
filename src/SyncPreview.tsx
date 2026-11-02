@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { createClient, type Session } from "@supabase/supabase-js";
 import { loadInventory } from "./indexedStorage";
-import { compareEquipmentMetadata, cloudAttachmentPaths, countAttachmentReferences } from "./syncFoundation";
+import { compareEquipmentMetadata, cloudAttachmentPaths, countAttachmentReferences, previewRecordConflicts, type RecordConflict } from "./syncFoundation";
 import { exportBackup, parseBackup, type Item } from "./domain";
 
 const url=import.meta.env.VITE_SUPABASE_URL;
 const key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const client=url&&key?createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 type Household={id:string;name:string;created_by:string};
-type Preview={localCount:number;remoteCount:number;decision:string;localOnly:number;remoteOnly:number;changed:number;attachments:number;cloudAttachments:number;verifiedFiles:number;missingFiles:number;invalidReferences:number;household:string};
+type Preview={localCount:number;remoteCount:number;decision:string;localOnly:number;remoteOnly:number;changed:number;attachments:number;cloudAttachments:number;verifiedFiles:number;missingFiles:number;invalidReferences:number;conflicts:RecordConflict[];household:string};
 function attachmentCount(items:Item[]):number{
  return items.reduce((count,item)=>count+(item.photo?1:0)+(item.photos?.length??0)+(item.documents?.length??0),0);
 }
@@ -57,13 +57,14 @@ export default function SyncPreview({session,households}:{session:Session;househ
    const remote=data.filter(row=>!row.deleted_at).map(row=>row.payload as Item);
    const cleanRemote=remote;
    const decision=compareEquipmentMetadata(local,cleanRemote);
+   const conflicts=previewRecordConflicts(local,cleanRemote);
    const references=cloudAttachmentPaths(cleanRemote,household);
    let verifiedFiles=0,missingFiles=0;
    for(const path of references.paths){
     const {error:headError}=await client.storage.from(BUCKET).info(path);
     if(headError)missingFiles++;else verifiedFiles++;
    }
-   setPreview({localCount:local.length,remoteCount:cleanRemote.length,decision:decision.kind,localOnly:"localOnly" in decision?decision.localOnly:0,remoteOnly:"remoteOnly" in decision?decision.remoteOnly:0,changed:"changed" in decision?decision.changed:0,attachments:attachmentCount(local),cloudAttachments:countAttachmentReferences(cleanRemote),verifiedFiles,missingFiles,invalidReferences:references.invalid,household});
+   setPreview({localCount:local.length,remoteCount:cleanRemote.length,decision:decision.kind,localOnly:"localOnly" in decision?decision.localOnly:0,remoteOnly:"remoteOnly" in decision?decision.remoteOnly:0,changed:"changed" in decision?decision.changed:0,attachments:attachmentCount(local),cloudAttachments:countAttachmentReferences(cleanRemote),verifiedFiles,missingFiles,invalidReferences:references.invalid,conflicts,household});
   }catch(e){setError(e instanceof Error?e.message:"Could not compare inventory.");}
   finally{setBusy(false);}
  }
@@ -139,6 +140,7 @@ export default function SyncPreview({session,households}:{session:Session;househ
   {preview&&preview.household===household&&<div className="account-sync-preview" role="status"><p><strong>On this device:</strong> {preview.localCount} records</p><p><strong>In the cloud:</strong> {preview.remoteCount} records</p>
    <p><strong>Equipment details (excluding attachment encoding):</strong> {preview.decision==="upload-local"?"Local inventory exists; cloud inventory is empty.":preview.decision==="download-remote"?"Cloud inventory exists; device inventory is empty.":preview.decision==="identical"?"The records match.":preview.decision==="empty"?"Both inventories are empty.":"Differences need review before any transfer."}</p>
    {preview.decision==="review-required"&&<p>Device-only: {preview.localOnly} · Cloud-only: {preview.remoteOnly} · Changed: {preview.changed}</p>}
+   {preview.conflicts.length>0&&<div><h4>Review equipment differences</h4><p>Read-only preview. No device or cloud records will be changed.</p><ul>{preview.conflicts.slice(0,25).map(conflict=><li key={conflict.id}><strong>{conflict.name}</strong> — {conflict.status==="different"?"Different fields: "+conflict.fields.join(", "):conflict.status==="device-only"?"Only on this device":"Only in cloud"}</li>)}</ul>{preview.conflicts.length>25&&<p>Showing 25 of {preview.conflicts.length} records.</p>}</div>}
    <p><strong>Attachment audit:</strong> {preview.attachments} device references · {preview.cloudAttachments} cloud references · {preview.verifiedFiles} verified private files · {preview.missingFiles} missing/inaccessible files · {preview.invalidReferences} invalid cloud references.</p>
    {(preview.missingFiles>0||preview.invalidReferences>0)&&<p role="alert">Some cloud attachments need review. No files or records have been changed.</p>}
    <p><strong>No transfer has occurred from comparison.</strong> Export a JSON backup before any upload. Automatic two-way sync is not enabled. Cloud backup downloads never overwrite this device.</p>

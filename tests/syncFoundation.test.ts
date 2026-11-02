@@ -1,6 +1,6 @@
 import { describe,expect,it } from "vitest";
 import { seed } from "../src/domain";
-import { canEdit,canManageMembers,decideInitialSync,validSyncManifest,compareEquipmentMetadata,cloudAttachmentPaths,countAttachmentReferences } from "../src/syncFoundation";
+import { canEdit,canManageMembers,decideInitialSync,validSyncManifest,compareEquipmentMetadata,cloudAttachmentPaths,countAttachmentReferences,previewRecordConflicts } from "../src/syncFoundation";
 
 describe("cloud sync safety boundary",()=>{
  it("does not overwrite local inventory when cloud is empty",()=>expect(decideInitialSync(seed,[])).toEqual({kind:"upload-local",localCount:seed.length,remoteCount:0}));
@@ -43,5 +43,21 @@ describe("jsonb-compatible comparisons",()=>{
  });
  it("still identifies real field changes",()=>{
   expect(compareEquipmentMetadata(seed,[{...seed[0],value:seed[0].value+1},...seed.slice(1)]).kind).toBe("review-required");
+ });
+});
+
+describe("per-record conflict preview",()=>{
+ it("shows only changed field names",()=>{
+  const result=previewRecordConflicts([seed[0]],[{...seed[0],name:"Updated",value:100}]);
+  expect(result).toEqual([{id:seed[0].id,name:seed[0].name,status:"different",fields:["name","value"]}]);
+ });
+ it("identifies device-only and cloud-only records",()=>{
+  const result=previewRecordConflicts([seed[0]],[seed[1]]);
+  expect(result.map(x=>x.status)).toEqual(["device-only","cloud-only"]);
+ });
+ it("ignores private attachment encodings and object order",()=>{
+  const a={...seed[0],photo:"data:image/jpeg;base64,AAAA"};
+  const b={photo:"cloud-asset:abc",notes:a.notes,value:a.value,quantity:a.quantity,location:a.location,category:a.category,name:a.name,id:a.id};
+  expect(previewRecordConflicts([a],[b])).toEqual([]);
  });
 });
