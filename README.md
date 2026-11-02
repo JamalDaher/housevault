@@ -149,3 +149,5 @@ Signed-in users can list households visible under existing Supabase RLS and crea
 ### iPhone in-app email OTP sign-in (PR #72)
 
 HouseVault Account now accepts a six-digit email verification code directly in the installed iPhone PWA, avoiding Safari's separate login session. The app sends email with `signInWithOtp` and verifies with `verifyOtp({email,token,type:'email'})`. **Supabase dashboard setup required:** Authentication → Email Templates → Magic Link, replace the link-only template or add a clearly labeled six-digit code using `{{ .Token }}`. Keep a usable magic link as fallback if desired. The OTP email template controls whether a numeric code is actually delivered; frontend changes alone cannot change the email. Test with a dedicated account in the installed PWA. Never paste sign-in codes into issues or support chats. No inventory upload or cloud sync is enabled.
+
+**Email OTP length:** HouseVault accepts six- or eight-digit numeric codes because the configured Supabase email template may issue eight-digit codes. Enter the entire code from the latest email in the installed PWA.
