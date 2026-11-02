@@ -126,3 +126,38 @@ export function appendImportedItem(item:Item):Promise<void>{
  pending=next;
  return next;
 }
+
+/** Replace only the approved record, provided its current content still matches.
+ * Keep old attachment assets for recovery; never garbage-collect during replacement. */
+export function replaceImportedItem(item:Item,expected:Item):Promise<void>{
+ const replacement=structuredClone(item),baseline=JSON.stringify(expected);
+ if(item.id!==expected.id)return Promise.reject(new Error("Record identity mismatch"));
+ const next=pending.catch(()=>undefined).then(async()=>{
+  const db=await openDatabase();
+  try{
+   const existing=await read(db);
+   const current=existing?.find(entry=>entry.id===item.id);
+   if(!current||JSON.stringify(current)!==baseline)throw new Error("Device record changed. Compare again; nothing was replaced.");
+   const extracted=extract([replacement]);
+   await new Promise<void>((resolve,reject)=>{
+    const tx=db.transaction([STORE,ASSETS],"readwrite");
+    const records=tx.objectStore(STORE),assets=tx.objectStore(ASSETS);
+    const get=records.get(RECORD);
+    get.onsuccess=()=>{
+     const raw=get.result as Item[]|undefined;
+     if(!Array.isArray(raw)||raw.filter(entry=>entry.id===item.id).length!==1){tx.abort();return;}
+     // A second read in the same transaction guards against changes from another tab.
+     const old=raw.find(entry=>entry.id===item.id)!;
+     const expectedKeys=extract([expected]).records[0];
+     if(JSON.stringify(old)!==JSON.stringify(expectedKeys)){tx.abort();return;}
+     for(const [key,value] of extracted.assets)assets.put(value,key);
+     records.put(raw.map(entry=>entry.id===item.id?extracted.records[0]:entry),RECORD);
+    };
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error??new Error("Device replacement failed"));
+    tx.onabort=()=>reject(new Error("Device record changed or storage failed; no replacement was saved."));
+   });
+  }finally{db.close();}
+ });
+ pending=next;return next;
+}
