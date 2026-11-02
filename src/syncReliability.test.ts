@@ -6,7 +6,7 @@ const item=(id:string,name:string,notes=""):Item=>({id,name,notes,category:"Tool
 
 describe("manual sync conflict safety",()=>{
  it("does not mistake JSON object key order for a conflict",()=>{
-  const a=item("a","Drill");const b={name:"Drill",...a};
+  const a=item("a","Drill");const b={...a};
   expect(previewRecordConflicts([a],[b])).toEqual([]);
  });
  it("detects changed, device-only and cloud-only records",()=>{
