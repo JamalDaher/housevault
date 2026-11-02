@@ -467,3 +467,5 @@ main:has(.quick-actions:not([hidden]))>header h1{font-size:clamp(24px,5vw,30px);
 .account-member-actions button{min-height:40px}
 .account-visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media(max-width:680px){.account-members-list li{flex-direction:column;align-items:stretch}.account-member-actions{justify-content:flex-end}.account-member-identity{width:100%}}
+
+.account-taxonomy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:16px}.account-taxonomy-grid section{min-width:0}.account-taxonomy-grid h4{margin:0 0 12px}.account-taxonomy-grid .account-members-list{margin-top:12px}.account-taxonomy-grid .account-members-list li{overflow-wrap:anywhere}@media(max-width:680px){.account-taxonomy-grid{grid-template-columns:1fr}}
