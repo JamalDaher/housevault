@@ -1,4 +1,4 @@
-export type Category = "Tools" | "Electronics" | "Appliances" | "Outdoor" | "Other";
+export type Category = string;
 export type ServiceRecord = { id:string; date:string; task:string; notes:string; cost:number }; 
 export type CustomField = { id:string; label:string; value:string };
 export type MaintenanceStep = { id:string; label:string };
@@ -49,7 +49,7 @@ export function parseBackup(raw: string): Item[] {
  return backup.items.map((entry:unknown)=>{
   if(!entry||typeof entry!=="object")throw new Error("Invalid inventory item.");
   const i=entry as Record<string,unknown>;
-  if(typeof i.id!=="string"||!i.id.trim()||ids.has(i.id)||typeof i.name!=="string"||typeof i.location!=="string"||typeof i.notes!=="string"||typeof i.category!=="string"||!categories.includes(i.category as Category)||typeof i.quantity!=="number"||typeof i.value!=="number")throw new Error("Backup contains invalid or duplicate records.");
+  if(typeof i.id!=="string"||!i.id.trim()||ids.has(i.id)||typeof i.name!=="string"||typeof i.location!=="string"||typeof i.notes!=="string"||typeof i.category!=="string"||(!i.category.trim()||i.category.length>60)||typeof i.quantity!=="number"||typeof i.value!=="number")throw new Error("Backup contains invalid or duplicate records.");
   if(i.documents!==undefined&&(!Array.isArray(i.documents)||i.documents.length>15||i.documents.some(d=>!d||typeof d!=="object"||typeof d.id!=="string"||!d.id.trim()||typeof d.name!=="string"||!d.name.trim()||d.name.length>150||!["application/pdf","image/jpeg","image/png","image/webp"].includes(d.type)||typeof d.data!=="string"||d.data.length>13_400_000||!/^data:(application\/pdf|image\/(jpeg|png|webp));base64,[A-Za-z0-9+/=]+$/.test(d.data)||!d.data.startsWith(`data:${d.type};base64,`))||new Set(i.documents.map(d=>d.id)).size!==i.documents.length))throw new Error("Invalid equipment documents.");
   if(i.customFields!==undefined&&(!Array.isArray(i.customFields)||i.customFields.length>20||i.customFields.some(f=>!f||typeof f!=="object"||typeof f.id!=="string"||!f.id.trim()||typeof f.label!=="string"||!f.label.trim()||f.label.length>60||typeof f.value!=="string"||f.value.length>500)||new Set(i.customFields.map(f=>f.id)).size!==i.customFields.length))throw new Error("Invalid custom equipment fields.");
   if(i.photos!==undefined&&(!Array.isArray(i.photos)||i.photos.length>6||i.photos.some(p=>typeof p!=="string"||!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(p)||p.length>250000)))throw new Error("Invalid equipment photos.");
@@ -128,7 +128,7 @@ export function parseInventoryCSV(raw:string):Omit<Item,"id">[] {
  return rows.map((r,index)=>{if(r.length!==6)throw new Error(`Row ${index+2} has the wrong number of columns.`);
  const [name,category,location,quantity,value,notes]=r;
  const item={name:name.trim(),category:category.trim() as Category,location:normalizeLocation(location),quantity:Number(quantity),value:Number(value),notes};
- if(!categories.includes(item.category)||!quantity.trim()||!value.trim()||!validItem({...item,id:"csv-preview"}))throw new Error(`Invalid inventory data on row ${index+2}.`);
+ if((!item.category.trim()||item.category.length>60)||!quantity.trim()||!value.trim()||!validItem({...item,id:"csv-preview"}))throw new Error(`Invalid inventory data on row ${index+2}.`);
  return item;});
 }
 export function inventoryDuplicateKey(item:Pick<Item,"name"|"category"|"location">):string {
@@ -139,7 +139,7 @@ export function inventoryDuplicateKey(item:Pick<Item,"name"|"category"|"location
 export function csvTemplate():string {return csvExport([])+"\r\n";}
 
 export function categorySummary(items:Item[]):{category:Category;records:number;quantity:number;value:number}[] {
- return categories.map(category=>{const matching=items.filter(i=>i.category===category);return {category,records:matching.length,quantity:matching.reduce((sum,i)=>sum+i.quantity,0),value:totalValue(matching)};}).filter(group=>group.records>0);
+ return [...new Set(items.map(i=>i.category))].sort().map(category=>{const matching=items.filter(i=>i.category===category);return {category,records:matching.length,quantity:matching.reduce((sum,i)=>sum+i.quantity,0),value:totalValue(matching)};}).filter(group=>group.records>0);
 }
 
 export function locationSummary(items:Item[]):{location:string;records:number;quantity:number;value:number}[] {
