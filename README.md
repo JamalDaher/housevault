@@ -193,3 +193,7 @@ Deploy `supabase/migrations/202611010006_member_profiles.sql`. The authenticated
 ### First-time sync preview (PR #85)
 
 Account → Compare device and cloud inventory offers a **read-only** household-specific comparison. It reports local and remote record counts, differences by stable item ID, and local attachment counts. It reads IndexedDB and authorized Supabase inventory rows but **never uploads, downloads into local storage, deletes, or enables background synchronization**. It limits cloud previews to 1,000 rows and refuses to continue on read/validation errors. A preview is not consent to transfer. Future releases must add an explicit reviewed action, backup verification, attachment handling, conflict resolution, and role/security integration tests before syncing personal inventory.
+
+### Shared household categories and locations (PR #86)
+
+After deploying migration `202611010009_household_taxonomy.sql`, Account → Categories & locations offers per-household shared lists. All members can read; only owners/editors can add/remove via an authenticated role-checked RPC. Removing a list entry does not modify existing inventory. **This phase does not yet change the local item editor's built-in category options or automatically sync local inventory.** A later PR will integrate household taxonomy selection, migrations of existing local values, and reviewed sync.
