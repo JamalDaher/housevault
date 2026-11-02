@@ -117,3 +117,7 @@ The repository now includes a [draft Supabase database migration](supabase/migra
 ### Phase 3: invitation security groundwork (PR #64)
 
 A second [draft Supabase migration](supabase/migrations/202611010002_family_invitations.sql) removes direct client membership writes and adds owner-only invitation creation/revocation and verified-email acceptance functions. Invitations expire after seven days and can grant editor or viewer access. **No invitation emails are sent and no sign-in or cloud sync is enabled yet.** This SQL has not been deployed or integration-tested against Supabase. Before enabling it, we must test real authentication, membership isolation, revoked access, account recovery, and private attachment storage. Existing local inventory remains unchanged.
+
+### Phase 4: Account page (PR #65)
+
+HouseVault now includes an **Account** navigation page explaining the current local-only status, backup precautions, and upcoming family workspace features. This is an informational screen, **not a working sign-in form**. No Supabase credentials, remote calls, account sessions, inventory uploads, or IndexedDB changes are introduced. Existing inventory remains accessible without signing in. Future authentication controls will only be enabled after the backend and security tests are ready.
