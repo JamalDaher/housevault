@@ -451,3 +451,19 @@ main:has(.quick-actions:not([hidden]))>header h1{font-size:clamp(24px,5vw,30px);
  .sidebar nav button svg{width:17px;height:17px}
  main{padding-top:14px}
 }
+
+
+/* Household member roster */
+.account-members-group{padding:14px 0;border-top:1px solid #e7edf1}
+.account-members-group h4{font-size:14px;margin:0 0 12px;color:#253c4d}
+.account-members-list{list-style:none;padding:0;margin:0;display:grid;gap:9px}
+.account-members-list li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;border:1px solid #e7edf1;border-radius:12px}
+.account-member-identity{display:flex;align-items:center;gap:10px;min-width:0}
+.account-member-identity>div{min-width:0;display:grid;gap:4px}
+.account-member-identity strong{font-size:13px}
+.account-member-identity small{color:#6b7c8c;font-size:11px;overflow-wrap:anywhere}
+.account-member-actions{display:flex;gap:7px;align-items:center}
+.account-member-actions select{min-height:40px;border:1px solid #cddbe4;border-radius:9px;background:#fff;padding:8px}
+.account-member-actions button{min-height:40px}
+.account-visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:680px){.account-members-list li{flex-direction:column;align-items:stretch}.account-member-actions{justify-content:flex-end}.account-member-identity{width:100%}}
