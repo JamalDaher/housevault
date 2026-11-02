@@ -40,7 +40,7 @@ async function prepareCloudItem(item:Item,household:string):Promise<Item>{
  return copy;
 }
 
-export default function SyncPreview({session,households}:{session:Session;households:Household[]}){
+export default function SyncPreview({session,households,onImportCloudItem}:{session:Session;households:Household[];onImportCloudItem:(item:Item)=>void}){
  const [household,setHousehold]=useState("");
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
@@ -134,6 +134,40 @@ export default function SyncPreview({session,households}:{session:Session;househ
   finally{setBusy(false);}
  }
 
+ async function importCloudOnlyRecord(id:string){
+  if(!client||busy||!preview||preview.household!==household||choices[id]!=="keep-cloud"||!preview.conflicts.some(c=>c.id===id&&c.status==="cloud-only"))return;
+  if(!window.confirm("Import this cloud-only record and its attachments into your device inventory? Existing device records will not be replaced. Save a device backup first."))return;
+  setBusy(true);setError("");setUploadMessage("");
+  try{
+   const local=await loadInventory();
+   if(local.some(item=>item.id===id))throw new Error("This record already exists on the device. Compare again.");
+   const {data,error:readError}=await client.from("inventory_records").select("payload,revision,deleted_at").eq("household_id",household).eq("item_id",id).single();
+   if(readError||!data||data.deleted_at)throw new Error("Cloud record unavailable. Compare again.");
+   const item=data.payload as Item;
+   if(item.id!==id)throw new Error("Cloud record identity mismatch.");
+   const refs=cloudAttachmentPaths([item],household);
+   if(refs.invalid)throw new Error("Invalid cloud attachment references. Import blocked.");
+   const resolved=new Map<string,string>();
+   for(const path of refs.paths){
+    const {data:file,error:fileError}=await client.storage.from(BUCKET).download(path);
+    if(fileError||!file||file.size>10_485_760||!["image/jpeg","image/png","image/webp","application/pdf"].includes(file.type))throw new Error("A private attachment could not be safely restored.");
+    const encoded=await new Promise<string>((resolve,reject)=>{
+     const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=()=>reject(new Error("Attachment read failed"));reader.readAsDataURL(file);
+    });
+    resolved.set("cloud-asset:"+path,encoded);
+   }
+   const restored={...item,photo:item.photo?resolved.get(item.photo)??item.photo:undefined,photos:item.photos?.map(p=>resolved.get(p)??p),documents:item.documents?.map(d=>({...d,data:resolved.get(d.data)??d.data}))};
+   const validated=parseBackup(exportBackup([restored]))[0];
+   const {data:latest,error:latestError}=await client.from("inventory_records").select("revision,deleted_at").eq("household_id",household).eq("item_id",id).single();
+   if(latestError||!latest||latest.deleted_at||latest.revision!==data.revision)throw new Error("Cloud record changed while downloading. Compare again.");
+   if((await loadInventory()).some(existing=>existing.id===id))throw new Error("Device record appeared during import. Compare again.");
+   onImportCloudItem(validated);
+   setUploadMessage("Imported cloud-only record into the open app. Existing device records were not replaced. Wait for device save to finish before closing the app.");
+   setPreview(null);setChoices({});
+  }catch(e){setError(e instanceof Error?e.message:"Unable to import cloud record.");setPreview(null);}
+  finally{setBusy(false);}
+ }
+
  async function uploadFirstCopy(){
   if(!client||!household||busy||!preview||preview.household!==household||preview.decision!=="upload-local")return;
   if(!window.confirm("Upload this device's inventory to the selected household? This creates cloud copies; it does not remove or replace local records. Back up your inventory first. Do not edit items on another device during this first upload."))return;
@@ -168,7 +202,7 @@ export default function SyncPreview({session,households}:{session:Session;househ
    {preview.conflicts.length>0&&<div><h4>Review equipment differences</h4><p>Read-only preview. No device or cloud records will be changed.</p><ul>{preview.conflicts.slice(0,25).map(conflict=><li key={conflict.id}><strong>{conflict.name}</strong> — {conflict.status==="different"?"Different fields: "+conflict.fields.join(", "):conflict.status==="device-only"?"Only on this device":"Only in cloud"}</li>)}</ul>{preview.conflicts.length>25&&<p>Showing 25 of {preview.conflicts.length} records.</p>}</div>}
    {preview.conflicts.length>0&&<div>
     <h4>Prepare conflict decisions</h4>
-    <p>For device-only records, you can explicitly create one new cloud record at a time. Other decisions remain review-only; no existing cloud records are overwritten.</p>
+    <p>Import cloud-only records or upload device-only records one at a time with confirmation. Existing records are never overwritten.</p>
     {preview.conflicts.map(conflict=><div key={conflict.id} className="account-inline-form">
      <label htmlFor={"conflict-"+conflict.id}>{conflict.name}</label>
      <select id={"conflict-"+conflict.id} value={choices[conflict.id]??""} onChange={e=>setChoices(previous=>({...previous,[conflict.id]:e.target.value as ConflictChoice}))}>
@@ -177,6 +211,7 @@ export default function SyncPreview({session,households}:{session:Session;househ
       <option value="keep-cloud">Keep cloud version</option>
       <option value="skip">Skip for now</option>
      </select>
+     {conflict.status==="cloud-only"&&choices[conflict.id]==="keep-cloud"&&<button type="button" className="secondary" disabled={busy} onClick={()=>void importCloudOnlyRecord(conflict.id)}>Import into device (confirmation required)</button>}
      {conflict.status==="device-only"&&choices[conflict.id]==="keep-device"&&<button type="button" className="secondary" disabled={busy} onClick={()=>void uploadApprovedNewRecord(conflict.id)}>Upload this new record (confirmation required)</button>}
     </div>)}
     {validateConflictApprovals(preview.conflicts,Object.entries(choices).map(([id,choice])=>({id,choice})))&&
