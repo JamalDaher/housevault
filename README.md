@@ -153,3 +153,7 @@ HouseVault Account now accepts a six-digit email verification code directly in t
 **Email OTP length:** HouseVault accepts six- or eight-digit numeric codes because the configured Supabase email template may issue eight-digit codes. Enter the entire code from the latest email in the installed PWA.
 
 The OTP field uses a length-neutral placeholder rather than a misleading six-digit sample; both six- and eight-digit codes remain supported.
+
+### Household invitations (PR #75)
+
+Signed-in household owners can create 7-day invitations for verified email addresses, assign viewer/editor roles, review invitation IDs and revoke pending invitations. A recipient signs in with the matching verified email and enters the invitation UUID to accept. This uses deployed Supabase RPCs (`create_household_invitation`, `accept_household_invitation`, `revoke_household_invitation`) and existing RLS; the browser never writes membership records directly. **Invitations are not emailed automatically**: owners must securely share the invitation ID. Invite IDs are sensitive; do not post them publicly. Roles prepare for future sharing but **inventory remains device-local** and is not accessible to other household members yet. Test cross-account permissions before any cloud sync rollout.
