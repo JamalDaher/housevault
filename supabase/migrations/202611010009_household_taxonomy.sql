@@ -19,7 +19,7 @@ grant select on public.household_categories,public.household_locations to authen
 revoke insert,update,delete on public.household_categories,public.household_locations from public,anon,authenticated;
 create function public.manage_household_taxonomy(target_household uuid,target_kind text,target_value text,target_action text)
 returns void language plpgsql security definer set search_path=''
-as $$
+as $taxonomy$
 declare cleaned text;
 begin
  if auth.uid() is null or public.household_role(target_household) not in ('owner','editor') then
@@ -44,6 +44,6 @@ begin
   end if;
  end if;
 end;
-$;
+$taxonomy$;
 revoke all on function public.manage_household_taxonomy(uuid,text,text,text) from public,anon;
 grant execute on function public.manage_household_taxonomy(uuid,text,text,text) to authenticated;
