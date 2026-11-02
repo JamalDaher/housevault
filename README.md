@@ -205,3 +205,7 @@ Account → Categories & locations re-fetches the selected household's categorie
 ### Shared categories and locations in the item editor
 
 When signed in, the Add/Edit Item form includes the selected household's shared categories alongside existing item categories and the built-in defaults. Location suggestions combine shared household paths with paths already used locally. Account → Categories & locations selects the household used by the editor; changes refresh without restarting. Item records remain local-first; this feature does not upload inventory. Existing custom categories are preserved by JSON backup/restore, CSV import, and reports.
+
+### First cloud inventory upload (PR #92)
+
+Account → Compare inventories offers an explicitly confirmed first upload only when the selected household has zero cloud records and this device has valid local inventory without photos or documents. Only owners/editors can upload. Writes use the existing revision-checked Supabase RPC, and local inventory is never overwritten. Uploading multiple records is not atomic: if a write fails, already uploaded records remain; compare again before retrying. Cloud download, attachment transfer, conflict resolution and automatic two-way sync are **not enabled** yet. Export a JSON backup before starting.
