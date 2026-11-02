@@ -121,3 +121,7 @@ A second [draft Supabase migration](supabase/migrations/202611010002_family_invi
 ### Phase 4: Account page (PR #65)
 
 HouseVault now includes an **Account** navigation page explaining the current local-only status, backup precautions, and upcoming family workspace features. This is an informational screen, **not a working sign-in form**. No Supabase credentials, remote calls, account sessions, inventory uploads, or IndexedDB changes are introduced. Existing inventory remains accessible without signing in. Future authentication controls will only be enabled after the backend and security tests are ready.
+
+### Cloud backend security review (PR #66)
+
+The connected **HouseVault** Supabase project exists in US East (Ohio), but **the cloud schema is not deployed and no sync is enabled**. This review tightens the pending SQL migrations: household creator fields cannot be edited by browser clients, inventory and attachment writes remain disabled until revision-safe audited RPCs exist, and direct membership writes are revoked. The schema remains a draft requiring real database integration tests, an audit of privileged functions, secure Storage policies, and a reviewed deployment. Local IndexedDB data is unchanged.
