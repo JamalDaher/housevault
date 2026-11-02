@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { createClient, type Session } from "@supabase/supabase-js";
 import { loadInventory } from "./indexedStorage";
-import { decideInitialSync } from "./syncFoundation";
+import { compareEquipmentMetadata, cloudAttachmentPaths, countAttachmentReferences } from "./syncFoundation";
 import { type Item } from "./domain";
 
 const url=import.meta.env.VITE_SUPABASE_URL;
 const key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const client=url&&key?createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 type Household={id:string;name:string;created_by:string};
-type Preview={localCount:number;remoteCount:number;decision:string;localOnly:number;remoteOnly:number;changed:number;attachments:number;household:string};
+type Preview={localCount:number;remoteCount:number;decision:string;localOnly:number;remoteOnly:number;changed:number;attachments:number;cloudAttachments:number;verifiedFiles:number;missingFiles:number;invalidReferences:number;household:string};
 function attachmentCount(items:Item[]):number{
  return items.reduce((count,item)=>count+(item.photo?1:0)+(item.photos?.length??0)+(item.documents?.length??0),0);
 }
@@ -56,8 +56,14 @@ export default function SyncPreview({session,households}:{session:Session;househ
    if(!data||data.length>1000)throw new Error("The cloud inventory exceeds the 1,000-record preview limit.");
    const remote=data.filter(row=>!row.deleted_at).map(row=>row.payload as Item);
    const cleanRemote=remote;
-   const decision=decideInitialSync(local.map(item=>({...item,photo:undefined,photos:undefined,documents:undefined})),cleanRemote.map(item=>({...item,photo:undefined,photos:undefined,documents:undefined})));
-   setPreview({localCount:local.length,remoteCount:cleanRemote.length,decision:decision.kind,localOnly:"localOnly" in decision?decision.localOnly:0,remoteOnly:"remoteOnly" in decision?decision.remoteOnly:0,changed:"changed" in decision?decision.changed:0,attachments:attachmentCount(local),household});
+   const decision=compareEquipmentMetadata(local,cleanRemote);
+   const references=cloudAttachmentPaths(cleanRemote,household);
+   let verifiedFiles=0,missingFiles=0;
+   for(const path of references.paths){
+    const {error:headError}=await client.storage.from(BUCKET).info(path);
+    if(headError)missingFiles++;else verifiedFiles++;
+   }
+   setPreview({localCount:local.length,remoteCount:cleanRemote.length,decision:decision.kind,localOnly:"localOnly" in decision?decision.localOnly:0,remoteOnly:"remoteOnly" in decision?decision.remoteOnly:0,changed:"changed" in decision?decision.changed:0,attachments:attachmentCount(local),cloudAttachments:countAttachmentReferences(cleanRemote),verifiedFiles,missingFiles,invalidReferences:references.invalid,household});
   }catch(e){setError(e instanceof Error?e.message:"Could not compare inventory.");}
   finally{setBusy(false);}
  }
@@ -86,14 +92,15 @@ export default function SyncPreview({session,households}:{session:Session;househ
   finally{setBusy(false);}
  }
  return <div className="account-card account-wide">
-  <div className="account-section-heading"><div><span className="account-kicker">SYNC SETUP · CONTROLLED FIRST UPLOAD</span><h3>Compare device and cloud inventory</h3><p>Review the two inventories before enabling synchronization. Comparison is read-only. First-time upload is available only after confirmation when the cloud is empty and the cloud is empty. Photos and documents upload to private household storage first.</p></div></div>
+  <div className="account-section-heading"><div><span className="account-kicker">SYNC SETUP · CONTROLLED FIRST UPLOAD</span><h3>Compare device and cloud inventory</h3><p>Review the two inventories before enabling synchronization. Comparison is read-only. First-time upload is available only after confirmation when the selected household cloud inventory is empty. Photos and documents upload to private household storage first.</p></div></div>
   <div className="account-inline-form"><div><label htmlFor="sync-household">Household</label><select id="sync-household" value={household} onChange={e=>{setHousehold(e.target.value);setPreview(null);setError("");}}><option value="">Select a household</option>{households.map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select></div><button type="button" disabled={!household||busy||!session.user.id} onClick={()=>void compare()}>{busy?"Comparing…":"Compare inventories"}</button></div>
   {error&&<p role="alert" className="account-feedback">{error}</p>}
   {uploadMessage&&<p role="status" className="account-feedback">{uploadMessage}</p>}
   {preview&&preview.household===household&&<div className="account-sync-preview" role="status"><p><strong>On this device:</strong> {preview.localCount} records</p><p><strong>In the cloud:</strong> {preview.remoteCount} records</p>
-   <p><strong>Assessment:</strong> {preview.decision==="upload-local"?"Local inventory exists; cloud inventory is empty.":preview.decision==="download-remote"?"Cloud inventory exists; device inventory is empty.":preview.decision==="identical"?"The records match.":preview.decision==="empty"?"Both inventories are empty.":"Differences need review before any transfer."}</p>
+   <p><strong>Equipment details (excluding attachment encoding):</strong> {preview.decision==="upload-local"?"Local inventory exists; cloud inventory is empty.":preview.decision==="download-remote"?"Cloud inventory exists; device inventory is empty.":preview.decision==="identical"?"The records match.":preview.decision==="empty"?"Both inventories are empty.":"Differences need review before any transfer."}</p>
    {preview.decision==="review-required"&&<p>Device-only: {preview.localOnly} · Cloud-only: {preview.remoteOnly} · Changed: {preview.changed}</p>}
-   {preview.attachments>0&&<p><strong>Attachment warning:</strong> {preview.attachments} local photo/document references will be uploaded to private household storage. Download and automatic synchronization are not enabled yet.</p>}
+   <p><strong>Attachment audit:</strong> {preview.attachments} device references · {preview.cloudAttachments} cloud references · {preview.verifiedFiles} verified private files · {preview.missingFiles} missing/inaccessible files · {preview.invalidReferences} invalid cloud references.</p>
+   {(preview.missingFiles>0||preview.invalidReferences>0)&&<p role="alert">Some cloud attachments need review. No files or records have been changed.</p>}
    <p><strong>No transfer has occurred from comparison.</strong> Export a JSON backup before any upload. Automatic two-way sync and downloading are not yet enabled.</p>
    {preview.decision==="upload-local"&&<button type="button" className="secondary" disabled={busy} onClick={()=>void uploadFirstCopy()}>{busy?"Uploading…":"Upload first cloud copy (confirmation required)"}</button>}</div>}
  </div>;
