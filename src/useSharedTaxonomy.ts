@@ -21,7 +21,7 @@ export function useSharedTaxonomy(){
    const {data:{session}}=await db.auth.getSession();
    if(!active)return;
    if(!session){setCategories([]);setLocations([]);setHousehold("");return;}
-   const {data:members,error}=await db.from("household_members").select("household_id").eq("user_id",session.user.id).order("created_at",{ascending:true});
+   const {data:members,error}=await db.from("household_members").select("household_id").eq("user_id",session.user.id);
    if(!active||error)return;
    const ids=(members??[]).map(m=>m.household_id as string);
    const selected=localStorage.getItem("housevault.taxonomy-household")??"";
