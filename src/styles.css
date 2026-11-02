@@ -421,3 +421,17 @@ main:has(.quick-actions:not([hidden]))>header h1{font-size:clamp(24px,5vw,30px);
  .sidebar nav{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
  .sidebar nav button{font-size:9px;padding:7px 2px}
 }
+
+
+/* Compact iPhone masthead: retain all sections without a tall header. */
+@media(max-width:680px){
+ .sidebar{padding:9px 12px 10px}
+ .sidebar .brand{gap:8px;margin-bottom:9px;font-size:15px;line-height:1.05}
+ .sidebar .brand-icon{padding:7px;border-radius:10px;display:grid;place-items:center}
+ .sidebar .brand-icon svg{width:19px;height:19px}
+ .sidebar .brand small{font-size:8px;margin-top:3px;letter-spacing:.1em}
+ .sidebar nav{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+ .sidebar nav button{min-height:46px;padding:5px 2px;gap:3px;font-size:10px;line-height:1.1;border-radius:8px}
+ .sidebar nav button svg{width:16px;height:16px}
+ main{padding-top:18px}
+}
