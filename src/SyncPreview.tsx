@@ -217,8 +217,7 @@ export default function SyncPreview({session,households,onImportCloudItem,onRepl
    const validated=parseBackup(exportBackup([restored]))[0];
    const {data:latest,error:latestError}=await client.from("inventory_records").select("revision,deleted_at").eq("household_id",household).eq("item_id",id).single();
    if(latestError||!latest||latest.deleted_at||latest.revision!==data.revision)throw new Error("Cloud record changed while downloading. Compare again.");
-   if((await loadInventory()).some(existing=>existing.id===id))throw new Error("Device record appeared during import. Compare again.");
-   await onImportCloudItem(validated);
+   await onReplaceCloudItem(validated,expected);
    setUploadMessage("Replaced one approved device record and saved its cloud attachments. Other device records were preserved.");
    setPreview(null);setChoices({});
   }catch(e){setError(e instanceof Error?e.message:"Unable to import cloud record.");setPreview(null);}
