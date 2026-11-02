@@ -15,7 +15,7 @@ function attachmentCount(items:Item[]):number{
 
 const BUCKET="housevault-attachments";
 function dataToBlob(data:string):Blob{
- const match=/^data:(image\\/(?:jpeg|png|webp)|application\\/pdf);base64,([A-Za-z0-9+/=]+)$/.exec(data);
+ const match=/^data:(image\/(?:jpeg|png|webp)|application\/pdf);base64,([A-Za-z0-9+/=]+)$/.exec(data);
  if(!match)throw new Error("Unsupported attachment data. Only JPEG, PNG, WebP and PDF files can be uploaded.");
  const bytes=atob(match[2]);if(bytes.length>10_485_760)throw new Error("An attachment exceeds the 10 MB limit.");
  const out=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)out[i]=bytes.charCodeAt(i);
