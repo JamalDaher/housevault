@@ -8,7 +8,7 @@ const url=import.meta.env.VITE_SUPABASE_URL;
 const key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const client=url&&key?createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 
-export default function CloudAccount({onImportCloudItem}:{onImportCloudItem:(item:Item)=>void}){
+export default function CloudAccount({onImportCloudItem}:{onImportCloudItem:(item:Item)=>Promise<void>}){
  const [session,setSession]=useState<Session|null>(null);
  const [email,setEmail]=useState("");
  const [pendingEmail,setPendingEmail]=useState("");
