@@ -95,3 +95,34 @@ export function saveInventory(items:Item[]):Promise<void>{
  const next=pending.catch(()=>undefined).then(async()=>{const db=await openDatabase();try{await write(db,snapshot);}finally{db.close();}});
  pending=next;return next;
 }
+
+/** Add exactly one cloud-imported item atomically with its attachment assets.
+ * Never replace existing records or delete existing attachments. */
+export function appendImportedItem(item:Item):Promise<void>{
+ const snapshot=structuredClone(item);
+ const next=pending.catch(()=>undefined).then(async()=>{
+  const db=await openDatabase();
+  try{
+   await new Promise<void>((resolve,reject)=>{
+    const tx=db.transaction([STORE,ASSETS],"readwrite");
+    const inventory=tx.objectStore(STORE);
+    const assets=tx.objectStore(ASSETS);
+    const request=inventory.get(RECORD);
+    request.onsuccess=()=>{
+     const current=request.result as Item[]|undefined;
+     if(current!==undefined&&!Array.isArray(current)){tx.abort();return;}
+     const records=current??legacyItems();
+     if(records.some(existing=>existing.id===snapshot.id)){tx.abort();return;}
+     const extracted=extract([snapshot]);
+     for(const [key,value] of extracted.assets)assets.put(value,key);
+     inventory.put([...records,...extracted.records],RECORD);
+    };
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error??new Error("Import transaction failed"));
+    tx.onabort=()=>reject(new Error("Import cancelled: record already exists or storage is unavailable."));
+   });
+  }finally{db.close();}
+ });
+ pending=next;
+ return next;
+}

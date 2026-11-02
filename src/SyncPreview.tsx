@@ -40,7 +40,7 @@ async function prepareCloudItem(item:Item,household:string):Promise<Item>{
  return copy;
 }
 
-export default function SyncPreview({session,households,onImportCloudItem}:{session:Session;households:Household[];onImportCloudItem:(item:Item)=>void}){
+export default function SyncPreview({session,households,onImportCloudItem}:{session:Session;households:Household[];onImportCloudItem:(item:Item)=>Promise<void>}){
  const [household,setHousehold]=useState("");
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
@@ -161,8 +161,8 @@ export default function SyncPreview({session,households,onImportCloudItem}:{sess
    const {data:latest,error:latestError}=await client.from("inventory_records").select("revision,deleted_at").eq("household_id",household).eq("item_id",id).single();
    if(latestError||!latest||latest.deleted_at||latest.revision!==data.revision)throw new Error("Cloud record changed while downloading. Compare again.");
    if((await loadInventory()).some(existing=>existing.id===id))throw new Error("Device record appeared during import. Compare again.");
-   onImportCloudItem(validated);
-   setUploadMessage("Imported cloud-only record into the open app. Existing device records were not replaced. Wait for device save to finish before closing the app.");
+   await onImportCloudItem(validated);
+   setUploadMessage("Imported and saved one cloud-only record with its attachments in device storage. Existing device records were not replaced.");
    setPreview(null);setChoices({});
   }catch(e){setError(e instanceof Error?e.message:"Unable to import cloud record.");setPreview(null);}
   finally{setBusy(false);}
