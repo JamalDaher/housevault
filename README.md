@@ -213,3 +213,7 @@ Account → Compare inventories offers an explicitly confirmed first upload only
 ### Private attachment upload (PR #93)
 
 Apply migration `202611020010_private_attachment_storage.sql` before using first upload. The private `housevault-attachments` bucket enforces household membership for reads and owner/editor permission for uploads. JPEG, PNG, WebP and PDF attachments (up to 10 MB each) upload before their inventory record; cloud payloads contain private `cloud-asset:` paths, not inline data. The original device data remains unchanged. **No cloud-to-device attachment download or automatic two-way sync yet.** Interrupted uploads can leave partial inventory and unreferenced private files; compare and review before retrying. Export a local JSON backup first.
+
+### Cloud backup download (PR #98)
+
+After a successful Account → Compare inventories check, household members can explicitly download a full JSON backup of cloud records and their private JPEG/PNG/WebP/PDF attachments. Every referenced file is downloaded and validated before a backup is offered. Download never writes to IndexedDB, and it does not enable automatic sync or replace local inventory. Keep the downloaded JSON private; it embeds attachments. Restore/import is a separate, manual action and should be performed only after backing up the receiving device. Cloud inventory changing during a download may require retrying.
