@@ -89,3 +89,16 @@ export function previewRecordConflicts(local:Item[],remote:Item[]):RecordConflic
  }
  return conflicts;
 }
+
+/** Explicit user choices; never infer overwrite permission from a comparison. */
+export type ConflictChoice="keep-device"|"keep-cloud"|"skip";
+export type ApprovedConflict={id:string;choice:ConflictChoice};
+export function validateConflictApprovals(conflicts:RecordConflict[],approvals:ApprovedConflict[]):boolean{
+ const expected=new Set(conflicts.map(c=>c.id));
+ if(approvals.length!==expected.size||new Set(approvals.map(a=>a.id)).size!==approvals.length)return false;
+ return approvals.every(a=>expected.has(a.id)&&["keep-device","keep-cloud","skip"].includes(a.choice));
+}
+export function summarizeConflictApprovals(conflicts:RecordConflict[],approvals:ApprovedConflict[]){
+ if(!validateConflictApprovals(conflicts,approvals))throw new Error("Every conflict requires an explicit decision.");
+ return {device:approvals.filter(a=>a.choice==="keep-device").length,cloud:approvals.filter(a=>a.choice==="keep-cloud").length,skipped:approvals.filter(a=>a.choice==="skip").length};
+}
