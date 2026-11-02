@@ -1,6 +1,6 @@
 import { describe,expect,it } from "vitest";
 import { seed } from "../src/domain";
-import { canEdit,canManageMembers,decideInitialSync,validSyncManifest } from "../src/syncFoundation";
+import { canEdit,canManageMembers,decideInitialSync,validSyncManifest,compareEquipmentMetadata,cloudAttachmentPaths,countAttachmentReferences } from "../src/syncFoundation";
 
 describe("cloud sync safety boundary",()=>{
  it("does not overwrite local inventory when cloud is empty",()=>expect(decideInitialSync(seed,[])).toEqual({kind:"upload-local",localCount:seed.length,remoteCount:0}));
@@ -13,4 +13,23 @@ describe("cloud sync safety boundary",()=>{
  it("rejects invalid inventory data before any sync decision",()=>expect(()=>decideInitialSync([{...seed[0],quantity:-1}],[])).toThrow());
  it("enforces family role capabilities",()=>{expect(canEdit("owner")).toBe(true);expect(canEdit("editor")).toBe(true);expect(canEdit("viewer")).toBe(false);expect(canManageMembers("owner")).toBe(true);expect(canManageMembers("editor")).toBe(false);expect(canManageMembers("viewer")).toBe(false);});
  it("validates sync revision metadata",()=>{expect(validSyncManifest({schemaVersion:1,workspaceId:"family-1",revision:"rev-1",updatedAt:"2026-11-01T00:00:00Z",itemCount:2})).toBe(true);expect(validSyncManifest({schemaVersion:1,workspaceId:"",revision:"",updatedAt:"oops",itemCount:-1})).toBe(false);});
+});
+
+describe("read-only sync audit",()=>{
+ it("ignores attachment encoding differences in equipment comparison",()=>{
+  const local=[{...seed[0],photo:"data:image/jpeg;base64,AAAA"}];
+  const remote=[{...seed[0],photo:"cloud-asset:12345678-1234-1234-1234-123456789abc/12345678-1234-1234-1234-123456789abc"}];
+  expect(compareEquipmentMetadata(local,remote).kind).toBe("identical");
+  expect(countAttachmentReferences(local)).toBe(1);
+ });
+ it("counts unique private files separately from references",()=>{
+  const household="12345678-1234-1234-1234-123456789abc";
+  const path=household+"/12345678-1234-1234-1234-123456789abc";
+  const result=cloudAttachmentPaths([{...seed[0],photo:"cloud-asset:"+path,photos:["cloud-asset:"+path]}],household);
+  expect(result).toEqual({paths:[path],invalid:0});
+ });
+ it("flags malformed or foreign household attachment references",()=>{
+  const result=cloudAttachmentPaths([{...seed[0],photo:"cloud-asset:foreign/file"}],"12345678-1234-1234-1234-123456789abc");
+  expect(result.invalid).toBe(1);
+ });
 });
