@@ -43,7 +43,7 @@ begin
    delete from public.household_locations where household_id=target_household and path=cleaned;
   end if;
  end if;
-end
-$$;
+end;
+$;
 revoke all on function public.manage_household_taxonomy(uuid,text,text,text) from public,anon;
 grant execute on function public.manage_household_taxonomy(uuid,text,text,text) to authenticated;
