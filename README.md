@@ -181,3 +181,7 @@ The Account page lists household members and their viewer/editor/owner roles. Ow
 ### Household creation fix (PR #81)
 
 Deploy `supabase/migrations/202611010005_create_household_rpc.sql`. Account → Create household now calls the authenticated `create_household` RPC, which inserts and returns a household in one owner-authorized transaction, avoiding `INSERT ... RETURNING` RLS visibility issues. No inventory is uploaded.
+
+### Household member names and emails (PR #82)
+
+Deploy `supabase/migrations/202611010006_member_profiles.sql`. The authenticated `list_household_member_profiles` RPC returns member email addresses and optional self-chosen display names **only for households the caller belongs to**. Display names are saved to the signed-in user's own Supabase Auth metadata using `auth.updateUser`; names are presentation-only and never trusted for authorization. Household roles and permissions still use server-validated UUIDs. Shared household members can see one another's email addresses; do not join a household if you do not want its members to see your sign-in email. Inventory remains local.
