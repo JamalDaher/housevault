@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createClient, type Session } from "@supabase/supabase-js";
 import { loadInventory } from "./indexedStorage";
 import { compareEquipmentMetadata, cloudAttachmentPaths, countAttachmentReferences } from "./syncFoundation";
-import { type Item } from "./domain";
+import { exportBackup, parseBackup, type Item } from "./domain";
 
 const url=import.meta.env.VITE_SUPABASE_URL;
 const key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -68,6 +68,46 @@ export default function SyncPreview({session,households}:{session:Session;househ
   finally{setBusy(false);}
  }
 
+
+ async function downloadCloudBackup(){
+  if(!client||!household||busy||!preview||preview.household!==household||preview.missingFiles||preview.invalidReferences||!preview.remoteCount)return;
+  if(!window.confirm("Download a complete cloud inventory JSON backup? This does not change your device inventory. Keep the file private."))return;
+  setBusy(true);setError("");setUploadMessage("");
+  try{
+   const {data,error:readError}=await client.from("inventory_records").select("payload,deleted_at").eq("household_id",household).limit(1001);
+   if(readError||!data||data.length>1000)throw new Error("Could not safely read all cloud records.");
+   const remote=data.filter(row=>!row.deleted_at).map(row=>row.payload as Item);
+   if(remote.length!==preview.remoteCount)throw new Error("Cloud inventory changed since comparison. Compare again.");
+   const references=cloudAttachmentPaths(remote,household);
+   if(references.invalid)throw new Error("Invalid cloud attachment references. Download blocked.");
+   const resolved=new Map<string,string>();
+   for(const path of references.paths){
+    const {data:file,error:fileError}=await client.storage.from(BUCKET).download(path);
+    if(fileError||!file)throw new Error("A private attachment could not be downloaded. No local records were changed.");
+    if(file.size>10_485_760)throw new Error("A private attachment exceeds the 10 MB limit.");
+    const type=file.type;
+    if(!["image/jpeg","image/png","image/webp","application/pdf"].includes(type))throw new Error("Unsupported cloud attachment format.");
+    const encoded=await new Promise<string>((resolve,reject)=>{
+     const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=()=>reject(new Error("Attachment read failed"));reader.readAsDataURL(file);
+    });
+    resolved.set("cloud-asset:"+path,encoded);
+   }
+   const restored=remote.map(item=>({...item,
+    photo:item.photo?resolved.get(item.photo)??item.photo:undefined,
+    photos:item.photos?.map(p=>resolved.get(p)??p),
+    documents:item.documents?.map(d=>({...d,data:resolved.get(d.data)??d.data}))
+   }));
+   const raw=exportBackup(restored);
+   parseBackup(raw);
+   const blob=new Blob([raw],{type:"application/json"});
+   const href=URL.createObjectURL(blob);
+   const anchor=document.createElement("a");anchor.href=href;anchor.download="housevault-cloud-backup-"+new Date().toISOString().slice(0,10)+".json";
+   document.body.appendChild(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(href),60000);
+   setUploadMessage("Cloud backup prepared for download. Your device inventory was not modified. Store the JSON file privately.");
+  }catch(e){setError(e instanceof Error?e.message:"Could not download cloud backup.");}
+  finally{setBusy(false);}
+ }
+
  async function uploadFirstCopy(){
   if(!client||!household||busy||!preview||preview.household!==household||preview.decision!=="upload-local")return;
   if(!window.confirm("Upload this device's inventory to the selected household? This creates cloud copies; it does not remove or replace local records. Back up your inventory first. Do not edit items on another device during this first upload."))return;
@@ -101,7 +141,8 @@ export default function SyncPreview({session,households}:{session:Session;househ
    {preview.decision==="review-required"&&<p>Device-only: {preview.localOnly} · Cloud-only: {preview.remoteOnly} · Changed: {preview.changed}</p>}
    <p><strong>Attachment audit:</strong> {preview.attachments} device references · {preview.cloudAttachments} cloud references · {preview.verifiedFiles} verified private files · {preview.missingFiles} missing/inaccessible files · {preview.invalidReferences} invalid cloud references.</p>
    {(preview.missingFiles>0||preview.invalidReferences>0)&&<p role="alert">Some cloud attachments need review. No files or records have been changed.</p>}
-   <p><strong>No transfer has occurred from comparison.</strong> Export a JSON backup before any upload. Automatic two-way sync and downloading are not yet enabled.</p>
+   <p><strong>No transfer has occurred from comparison.</strong> Export a JSON backup before any upload. Automatic two-way sync is not enabled. Cloud backup downloads never overwrite this device.</p>
+   {preview.remoteCount>0&&preview.missingFiles===0&&preview.invalidReferences===0&&<button type="button" className="secondary" disabled={busy} onClick={()=>void downloadCloudBackup()}>{busy?"Working…":"Download complete cloud backup (no device changes)"}</button>}
    {preview.decision==="upload-local"&&<button type="button" className="secondary" disabled={busy} onClick={()=>void uploadFirstCopy()}>{busy?"Uploading…":"Upload first cloud copy (confirmation required)"}</button>}</div>}
  </div>;
 }
