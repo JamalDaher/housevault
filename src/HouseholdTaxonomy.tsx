@@ -13,28 +13,32 @@ export default function HouseholdTaxonomy({session,households}:{session:Session;
  const [location,setLocation]=useState("");
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState("");
+ const [refreshKey,setRefreshKey]=useState(0);
+ const [loading,setLoading]=useState(false);
  useEffect(()=>{if(!client||!household){return;}let active=true;const db=client;
+  setLoading(true);
   void Promise.all([
    db.from("household_categories").select("household_id,name").eq("household_id",household),
    db.from("household_locations").select("household_id,path").eq("household_id",household),
    db.from("household_members").select("role").eq("household_id",household).eq("user_id",session.user.id).single()
-  ]).then(([a,b,c])=>{if(!active)return;if(a.error||b.error||c.error){setMessage("Could not load household organization. The taxonomy migration may not be deployed.");return;}
+  ]).then(([a,b,c])=>{if(!active)return;setLoading(false);if(a.error||b.error||c.error){setMessage("Could not load household organization. The taxonomy migration may not be deployed.");return;}
    setCategories((a.data as Entry[]??[]).map(x=>x.name??""));setLocations((b.data as Entry[]??[]).map(x=>x.path??""));setRole(c.data?.role??"");
-  });return()=>{active=false;};
- },[household,session.user.id]);
+  }).catch(()=>{if(active){setLoading(false);setMessage("Could not refresh shared lists.");}});return()=>{active=false;};
+ },[household,session.user.id,refreshKey]);
  async function change(kind:"category"|"location",action:"add"|"remove",value:string){
   if(!client||!household||!["owner","editor"].includes(role)||busy)return;
   const cleaned=value.trim();if(!cleaned)return;
   setBusy(true);setMessage("");
   const {error}=await client.rpc("manage_household_taxonomy",{target_household:household,target_kind:kind,target_value:cleaned,target_action:action});
   if(error)setMessage("Could not update the shared "+kind+".");
-  else{const update=kind==="category"?setCategories:setLocations;update(old=>action==="add"?[...new Set([...old,cleaned])].sort():old.filter(x=>x!==cleaned));setMessage("Shared "+kind+" "+(action==="add"?"saved.":"removed from the list. Existing inventory records are unchanged."));if(kind==="category")setCategory("");else setLocation("");}
+  else{setMessage("Shared "+kind+" "+(action==="add"?"saved.":"removed from the list. Existing inventory records are unchanged."));if(kind==="category")setCategory("");else setLocation("");setRefreshKey(old=>old+1);}
   setBusy(false);
  }
  function add(event:FormEvent<HTMLFormElement>,kind:"category"|"location"){event.preventDefault();void change(kind,"add",kind==="category"?category:location);}
  const canEdit=role==="owner"||role==="editor";
  return <div className="account-card account-wide"><div className="account-section-heading"><div><span className="account-kicker">SHARED ORGANIZATION</span><h3>Categories & locations</h3><p>Shared lists for your household. Editors and owners can add or remove entries; existing inventory is never changed by removing a list entry.</p></div></div>
  <label htmlFor="taxonomy-household">Household</label><select id="taxonomy-household" value={household} onChange={e=>{setHousehold(e.target.value);setCategories([]);setLocations([]);setRole("");setMessage("");}}><option value="">Select a household</option>{households.map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select>
+ {household&&<div className="account-taxonomy-refresh"><button type="button" className="secondary" disabled={busy||loading} onClick={()=>{setMessage("");setRefreshKey(old=>old+1);}}>{loading?"Refreshing…":"Refresh lists"}</button><span>Changes appear automatically after saving.</span></div>}
  {household&&<div className="account-taxonomy-grid">{([["category",categories,category,setCategory,"Category name (e.g. Garden)"],["location",locations,location,setLocation,"Location path (e.g. House / Garage / Shelf)"]] as const).map(([kind,entries,value,setValue,placeholder])=><section key={kind}><h4>{kind==="category"?"Categories":"Locations"} ({entries.length})</h4>{canEdit&&<form className="account-inline-form" onSubmit={e=>add(e,kind)}><div><label htmlFor={"taxonomy-"+kind}>New {kind}</label><input id={"taxonomy-"+kind} value={value} maxLength={kind==="category"?60:240} placeholder={placeholder} onChange={e=>setValue(e.target.value)}/></div><button type="submit" disabled={busy||!value.trim()}>Add</button></form>}
  <ul className="account-members-list">{entries.map(entry=><li key={entry}><span>{entry}</span>{canEdit&&<button className="secondary" type="button" disabled={busy} onClick={()=>void change(kind,"remove",entry)}>Remove</button>}</li>)}</ul>{!entries.length&&<p className="account-empty">No shared {kind==="category"?"categories":"locations"} yet.</p>}</section>)}</div>}
  {message&&<p role="status" className="account-feedback">{message}</p>}
