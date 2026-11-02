@@ -1,6 +1,6 @@
 import { describe,expect,it } from "vitest";
 import { seed } from "../src/domain";
-import { canEdit,canManageMembers,decideInitialSync,validSyncManifest,compareEquipmentMetadata,cloudAttachmentPaths,countAttachmentReferences,previewRecordConflicts } from "../src/syncFoundation";
+import { canEdit,canManageMembers,decideInitialSync,validSyncManifest,compareEquipmentMetadata,cloudAttachmentPaths,countAttachmentReferences,previewRecordConflicts,validateConflictApprovals,summarizeConflictApprovals } from "../src/syncFoundation";
 
 describe("cloud sync safety boundary",()=>{
  it("does not overwrite local inventory when cloud is empty",()=>expect(decideInitialSync(seed,[])).toEqual({kind:"upload-local",localCount:seed.length,remoteCount:0}));
@@ -60,4 +60,11 @@ describe("per-record conflict preview",()=>{
   const b={photo:"cloud-asset:abc",notes:a.notes,value:a.value,quantity:a.quantity,location:a.location,category:a.category,name:a.name,id:a.id};
   expect(previewRecordConflicts([a],[b])).toEqual([]);
  });
+});
+
+describe("explicit sync approvals",()=>{
+ const conflicts=previewRecordConflicts([seed[0]],[{...seed[0],name:"Updated"},seed[1]]);
+ it("rejects incomplete choices",()=>expect(validateConflictApprovals(conflicts,[{id:seed[0].id,choice:"skip"}])).toBe(false));
+ it("rejects duplicate choices",()=>expect(validateConflictApprovals(conflicts,[{id:seed[0].id,choice:"skip"},{id:seed[0].id,choice:"keep-cloud"}])).toBe(false));
+ it("counts explicitly chosen actions",()=>expect(summarizeConflictApprovals(conflicts,[{id:seed[0].id,choice:"keep-device"},{id:seed[1].id,choice:"skip"}])).toEqual({device:1,cloud:0,skipped:1}));
 });
