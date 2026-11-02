@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createClient, type Session } from "@supabase/supabase-js";
 import { loadInventory } from "./indexedStorage";
-import { compareEquipmentMetadata, cloudAttachmentPaths, countAttachmentReferences, previewRecordConflicts, type RecordConflict } from "./syncFoundation";
+import { compareEquipmentMetadata, cloudAttachmentPaths, countAttachmentReferences, previewRecordConflicts, type RecordConflict, type ConflictChoice, validateConflictApprovals, summarizeConflictApprovals } from "./syncFoundation";
 import { exportBackup, parseBackup, type Item } from "./domain";
 
 const url=import.meta.env.VITE_SUPABASE_URL;
@@ -46,9 +46,10 @@ export default function SyncPreview({session,households}:{session:Session;househ
  const [error,setError]=useState("");
  const [preview,setPreview]=useState<Preview|null>(null);
  const [uploadMessage,setUploadMessage]=useState("");
+ const [choices,setChoices]=useState<Record<string,ConflictChoice>>({});
  async function compare(){
   if(!client||!household||busy||!households.some(h=>h.id===household))return;
-  setBusy(true);setError("");setUploadMessage("");setPreview(null);
+  setBusy(true);setError("");setUploadMessage("");setPreview(null);setChoices({});
   try{
    const local=await loadInventory();
    const {data,error:remoteError}=await client.from("inventory_records").select("item_id,payload,deleted_at").eq("household_id",household).limit(1001);
@@ -141,6 +142,7 @@ export default function SyncPreview({session,households}:{session:Session;househ
    <p><strong>Equipment details (excluding attachment encoding):</strong> {preview.decision==="upload-local"?"Local inventory exists; cloud inventory is empty.":preview.decision==="download-remote"?"Cloud inventory exists; device inventory is empty.":preview.decision==="identical"?"The records match.":preview.decision==="empty"?"Both inventories are empty.":"Differences need review before any transfer."}</p>
    {preview.decision==="review-required"&&<p>Device-only: {preview.localOnly} · Cloud-only: {preview.remoteOnly} · Changed: {preview.changed}</p>}
    {preview.conflicts.length>0&&<div><h4>Review equipment differences</h4><p>Read-only preview. No device or cloud records will be changed.</p><ul>{preview.conflicts.slice(0,25).map(conflict=><li key={conflict.id}><strong>{conflict.name}</strong> — {conflict.status==="different"?"Different fields: "+conflict.fields.join(", "):conflict.status==="device-only"?"Only on this device":"Only in cloud"}</li>)}</ul>{preview.conflicts.length>25&&<p>Showing 25 of {preview.conflicts.length} records.</p>}</div>}
+   {preview.conflicts.length>0&&<div><h4>Prepare conflict decisions</h4><p>Choose what to keep for each record. These choices are a review plan only; no inventory is changed or uploaded.</p>{preview.conflicts.map(conflict=><div key={conflict.id} className="account-inline-form"><label htmlFor={"conflict-"+conflict.id}>{conflict.name}</label><select id={"conflict-"+conflict.id} value={choices[conflict.id]??""} onChange={e=>setChoices(previous=>({...previous,[conflict.id]:e.target.value as ConflictChoice}))}><option value="">Choose action</option><option value="keep-device">Keep device version</option><option value="keep-cloud">Keep cloud version</option><option value="skip">Skip for now</option></select></div>)}{validateConflictApprovals(preview.conflicts,Object.entries(choices).map(([id,choice])=>({id,choice})))&&<p role="status">Review plan ready: {JSON.stringify(summarizeConflictApprovals(preview.conflicts,Object.entries(choices).map(([id,choice])=>({id,choice})))}. No changes have been applied.</p>}</div>}
    <p><strong>Attachment audit:</strong> {preview.attachments} device references · {preview.cloudAttachments} cloud references · {preview.verifiedFiles} verified private files · {preview.missingFiles} missing/inaccessible files · {preview.invalidReferences} invalid cloud references.</p>
    {(preview.missingFiles>0||preview.invalidReferences>0)&&<p role="alert">Some cloud attachments need review. No files or records have been changed.</p>}
    <p><strong>No transfer has occurred from comparison.</strong> Export a JSON backup before any upload. Automatic two-way sync is not enabled. Cloud backup downloads never overwrite this device.</p>
