@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createClient, type Session } from "@supabase/supabase-js";
 import { loadInventory } from "./indexedStorage";
 import { decideInitialSync } from "./syncFoundation";
-import { parseBackup, exportBackup, type Item } from "./domain";
+import { type Item } from "./domain";
 
 const url=import.meta.env.VITE_SUPABASE_URL;
 const key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
