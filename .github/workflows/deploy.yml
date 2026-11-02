@@ -22,7 +22,11 @@ jobs:
         with:
           node-version: 22
       - run: npm install --no-audit --no-fund
+      # These are browser-safe Supabase public settings, not secret credentials.
       - run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://ujctlenwwsemykbeltsq.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable__SDuwHGkLDKgFzs1lFzSQQ_hy8kRM9_
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
