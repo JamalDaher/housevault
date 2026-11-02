@@ -52,7 +52,7 @@ export default function CloudAccount(){
  }
  async function verifyCode(event:FormEvent<HTMLFormElement>){
   event.preventDefault();if(!client||busy||!pendingEmail)return;
-  if(!/^\\d{6}$/.test(code.trim())){setMessage("Enter the full six- or eight-digit code from your email.");return;}
+  if(!/^[0-9]{6,8}$/.test(code.trim())){setMessage("Enter the full six- or eight-digit code from your email.");return;}
   setBusy(true);setMessage("");
   const {error}=await client.auth.verifyOtp({email:pendingEmail,token:code.trim(),type:"email"});
   setBusy(false);
