@@ -51,14 +51,14 @@ export default function CloudAccount(){
  useEffect(()=>{
   if(!client||!session?.user.id)return;
   let active=true;
-  void client.rpc("list_household_member_profiles").then(({data,error})=>{
+  void client.rpc("list_household_member_profiles").returns<{household_id:string;user_id:string;role:string;email:string|null;display_name:string|null}[]>().then(({data,error})=>{
    if(active){if(error)setMemberMessage("Could not load household members.");else setMembers(data??[]);}
   });
   return()=>{active=false;};
  },[session?.user.id,households.length]);
  async function refreshMembers(){
   if(!client)return;
-  const {data,error}=await client.rpc("list_household_member_profiles");
+  const {data,error}=await client.rpc("list_household_member_profiles").returns<{household_id:string;user_id:string;role:string;email:string|null;display_name:string|null}[]>();
   if(error)setMemberMessage("Could not refresh members.");
   else setMembers(data??[]);
  }
