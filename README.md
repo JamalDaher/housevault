@@ -177,3 +177,7 @@ The mobile header now shows the current section and a Menu control instead of pe
 ### Household member management (PR #80)
 
 The Account page lists household members and their viewer/editor/owner roles. Owners can change non-owner roles between viewer and editor or remove non-owner members through `set_household_member_role` and `remove_household_member` authenticated Supabase RPCs. These functions require owner authorization, reject owner demotion/removal, and keep direct client membership writes revoked. **Deploy `supabase/migrations/202611010004_member_management.sql` to the HouseVault Supabase project before testing the action buttons.** The roster shows abbreviated member IDs, not other users' private email addresses. Inventory remains local and is not shared. Cross-account authorization tests are required before cloud sync.
+
+### Household creation fix (PR #81)
+
+Deploy `supabase/migrations/202611010005_create_household_rpc.sql`. Account → Create household now calls the authenticated `create_household` RPC, which inserts and returns a household in one owner-authorized transaction, avoiding `INSERT ... RETURNING` RLS visibility issues. No inventory is uploaded.
