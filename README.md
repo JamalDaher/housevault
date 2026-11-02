@@ -197,3 +197,7 @@ Account → Compare device and cloud inventory offers a **read-only** household-
 ### Shared household categories and locations (PR #86)
 
 After deploying migration `202611010009_household_taxonomy.sql`, Account → Categories & locations offers per-household shared lists. All members can read; only owners/editors can add/remove via an authenticated role-checked RPC. Removing a list entry does not modify existing inventory. **This phase does not yet change the local item editor's built-in category options or automatically sync local inventory.** A later PR will integrate household taxonomy selection, migrations of existing local values, and reviewed sync.
+
+### Shared list refresh (PR #90)
+
+Account → Categories & locations re-fetches the selected household's categories and locations immediately after a successful add/remove RPC. The **Refresh lists** button fetches updates made by another family member without restarting the PWA. This is an explicit refresh, not a background real-time subscription, and does not yet populate the inventory item editor.
