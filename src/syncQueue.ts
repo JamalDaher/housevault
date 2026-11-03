@@ -1,6 +1,6 @@
 /** Offline-first outbox. No network requests are made by this module. */
 export type SyncOperation = "upsert" | "delete";
-export type SyncEntry = { id:string; itemId:string; operation:SyncOperation; payload:unknown; createdAt:number; attempts:number; nextAttemptAt:number; leaseUntil:number; leaseToken:string|null };
+export type SyncEntry = { id:string; itemId:string; householdId?:string; operation:SyncOperation; payload:unknown; createdAt:number; attempts:number; nextAttemptAt:number; leaseUntil:number; leaseToken:string|null };
 const DB="housevault-sync-outbox", STORE="pending", VERSION=1;
 const open=()=>new Promise<IDBDatabase>((resolve,reject)=>{
  const request=indexedDB.open(DB,VERSION);
@@ -23,22 +23,39 @@ async function transact<T>(mode:IDBTransactionMode,work:(store:IDBObjectStore,re
  });}finally{db.close();}
 }
 const snapshot=<T>(value:T):T=>structuredClone(value);
-export async function enqueueSync(itemId:string,operation:SyncOperation,payload:unknown,now=Date.now()):Promise<SyncEntry>{
+export async function enqueueSync(itemId:string,operation:SyncOperation,payload:unknown,now=Date.now(),householdId?:string):Promise<SyncEntry>{
  if(!itemId.trim())throw new Error("Sync item ID required");
- const entry:SyncEntry={id:crypto.randomUUID(),itemId,operation,payload:snapshot(payload),createdAt:now,attempts:0,nextAttemptAt:now,leaseUntil:0,leaseToken:null};
+ if(householdId!==undefined&&!householdId.trim())throw new Error("Sync household ID required");
+ const entry:SyncEntry={id:crypto.randomUUID(),itemId,householdId,operation,payload:snapshot(payload),createdAt:now,attempts:0,nextAttemptAt:now,leaseUntil:0,leaseToken:null};
  return transact("readwrite",(store,resolve)=>{store.add(entry);resolve(snapshot(entry));});
+}
+/** Atomically enqueue one item per household across browser tabs. */
+export async function enqueueUniqueHouseholdUpsert(householdId:string,itemId:string,payload:unknown,now=Date.now()):Promise<boolean>{
+ if(!householdId.trim()||!itemId.trim())throw new Error("Household and item IDs required");
+ const copied=snapshot(payload);
+ return transact("readwrite",(store,resolve,reject)=>{
+  const req=store.getAll();
+  req.onerror=()=>reject(req.error??new Error("Unable to inspect sync queue"));
+  req.onsuccess=()=>{
+   if((req.result as SyncEntry[]).some(e=>e.householdId===householdId&&e.itemId===itemId)){resolve(false);return;}
+   const entry:SyncEntry={id:crypto.randomUUID(),itemId,householdId,operation:"upsert",payload:copied,createdAt:now,attempts:0,nextAttemptAt:now,leaseUntil:0,leaseToken:null};
+   store.add(entry);
+   resolve(true);
+  };
+ });
 }
 export async function listPendingSync():Promise<SyncEntry[]>{
  return transact("readonly",(store,resolve,reject)=>{const req=store.getAll();req.onsuccess=()=>resolve((req.result as SyncEntry[]).sort((a,b)=>a.createdAt-b.createdAt||a.id.localeCompare(b.id)));req.onerror=()=>reject(req.error??new Error("Unable to list sync queue"));});
 }
 /** Claims a single ready entry atomically across tabs; caller must retain the token. */
-export async function claimNextSync(now=Date.now(),leaseMs=30_000):Promise<SyncEntry|null>{
+export async function claimNextSync(now=Date.now(),leaseMs=30_000,householdId?:string):Promise<SyncEntry|null>{
  if(!Number.isFinite(leaseMs)||leaseMs<=0)throw new Error("Invalid lease");
+ if(householdId!==undefined&&!householdId.trim())throw new Error("Sync household ID required");
  return transact("readwrite",(store,resolve,reject)=>{
   const req=store.getAll();
   req.onerror=()=>reject(req.error??new Error("Unable to read sync queue"));
   req.onsuccess=()=>{
-   const ready=(req.result as SyncEntry[]).filter(e=>e.nextAttemptAt<=now&&e.leaseUntil<=now).sort((a,b)=>a.createdAt-b.createdAt||a.id.localeCompare(b.id))[0];
+   const ready=(req.result as SyncEntry[]).filter(e=>e.nextAttemptAt<=now&&e.leaseUntil<=now&&(householdId===undefined||e.householdId===householdId)).sort((a,b)=>a.createdAt-b.createdAt||a.id.localeCompare(b.id))[0];
    if(!ready){resolve(null);return;}
    const claimed={...ready,leaseUntil:now+leaseMs,leaseToken:crypto.randomUUID()};
    store.put(claimed);resolve(snapshot(claimed));
@@ -64,6 +81,24 @@ export async function retrySync(id:string,token:string,now=Date.now()):Promise<b
    const attempts=current.attempts+1;
    const delay=Math.min(300_000,1000*2**Math.min(attempts-1,18));
    store.put({...current,attempts,nextAttemptAt:now+delay,leaseUntil:0,leaseToken:null});
+   resolve(true);
+  };
+ });
+}
+
+/** Replace an unleased pending upsert snapshot without changing its identity.
+ * Refuses ambiguous duplicates or an in-flight lease.
+ */
+export async function refreshQueuedUpsert(householdId:string,itemId:string,payload:unknown,now=Date.now()):Promise<boolean>{
+ if(!householdId.trim()||!itemId.trim())throw new Error("Household and item IDs required");
+ return transact("readwrite",(store,resolve,reject)=>{
+  const req=store.getAll();
+  req.onerror=()=>reject(req.error??new Error("Unable to inspect queued changes"));
+  req.onsuccess=()=>{
+   const matches=(req.result as SyncEntry[]).filter(e=>e.householdId===householdId&&e.itemId===itemId);
+   if(matches.length!==1||matches[0].operation!=="upsert"||matches[0].leaseUntil>now){resolve(false);return;}
+   const current=matches[0];
+   store.put({...current,payload:snapshot(payload),attempts:0,nextAttemptAt:now,leaseUntil:0,leaseToken:null});
    resolve(true);
   };
  });

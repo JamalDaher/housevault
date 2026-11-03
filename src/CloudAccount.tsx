@@ -9,6 +9,7 @@ import CloudRevisionSmokeTest from "./CloudRevisionSmokeTest";
 import CloudRevisionPullPreview from "./CloudRevisionPullPreview";
 import CloudTransferCompare from "./CloudTransferCompare";
 import AutomaticCloudPull from "./AutomaticCloudPull";
+import OfflineSyncControls from "./OfflineSyncControls";
 import type {CloudReadinessDatabase} from "./cloudReadinessService";
 
 const url=import.meta.env.VITE_SUPABASE_URL;
@@ -202,6 +203,7 @@ export default function CloudAccount({onImportCloudItem,onReplaceCloudItem}:{onI
   {client&&session&&households.length>0&&<AccountFold title="Cloud revision preview"><CloudRevisionPullPreview client={client as unknown as Parameters<typeof CloudRevisionPullPreview>[0]["client"]} households={households}/></AccountFold>}
   {client&&session&&households.length>0&&<AccountFold title="Cloud transfer readiness"><CloudTransferCompare client={client as unknown as Parameters<typeof CloudTransferCompare>[0]["client"]} households={households} onImportCloudItem={onImportCloudItem}/></AccountFold>}
   {client&&session&&households.length>0&&<AccountFold title="Automatic new-record transfers (beta)"><AutomaticCloudPull client={client as unknown as Parameters<typeof AutomaticCloudPull>[0]["client"]} households={households} onImportCloudItem={onImportCloudItem} onReplaceCloudItem={onReplaceCloudItem}/></AccountFold>}
+  {client&&session&&households.length>0&&<AccountFold title="Offline sync queue (beta)"><OfflineSyncControls client={client as unknown as Parameters<typeof OfflineSyncControls>[0]["client"]} households={households}/></AccountFold>}
   <div className="account-privacy-note"><strong>Your inventory stays on this device</strong><p>Signing in alone will not upload or replace inventory. Opt-in new-record transfers are available above, but edits, deletions, photos, and documents are not automatically synchronized.</p></div>
  </div>;
 }
