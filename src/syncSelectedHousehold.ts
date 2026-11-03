@@ -20,7 +20,7 @@ export async function syncSelectedHousehold(
   householdId,
   readLocal:async id=>(await loadInventory()).find(item=>item.id===id)??null,
   readBaseline:id=>readSyncBaseline(householdId,id),
-  readRemote:api.read,
+  readRemote:api.readIncludingTombstone,
   write:api.write,
   saveBaseline:(id,baseline)=>saveSyncBaseline(householdId,id,baseline)
  });
