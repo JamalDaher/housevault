@@ -1,0 +1,9 @@
+import type {Item} from "./domain";
+export type SyncBaseline={revision:string;value:Item};
+const DB="housevault-sync-baselines",STORE="baselines";
+function database():Promise<IDBDatabase>{return new Promise((resolve,reject)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE);};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error??new Error("Baseline database unavailable"));r.onblocked=()=>reject(new Error("Close other HouseVault tabs"));});}
+function key(household:string,item:string){if(!household||!item)throw new Error("Household and item required");return JSON.stringify([household,item]);}
+export async function readSyncBaseline(household:string,item:string):Promise<SyncBaseline|null>{const db=await database();try{return await new Promise((resolve,reject)=>{const r=db.transaction(STORE,"readonly").objectStore(STORE).get(key(household,item));r.onsuccess=()=>resolve(r.result??null);r.onerror=()=>reject(r.error);});}finally{db.close();}}
+export async function saveSyncBaseline(household:string,item:string,baseline:SyncBaseline):Promise<void>{const db=await database();try{await new Promise<void>((resolve,reject)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(structuredClone(baseline),key(household,item));tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}finally{db.close();}}
+export function sameItem(a:Item,b:Item):boolean{return JSON.stringify(a)===JSON.stringify(b);}
+export function canUploadEdit(local:Item,remote:Item,baseline:SyncBaseline,remoteRevision:string):boolean{return !local.photo&&!local.photos?.length&&!local.documents?.length&&baseline.revision===remoteRevision&&sameItem(remote,baseline.value)&&!sameItem(local,baseline.value);}
