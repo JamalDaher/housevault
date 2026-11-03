@@ -152,6 +152,25 @@ describe("queue-to-transport integration",()=>{
   expect(writes).toEqual(["a"]);
   expect(await listPendingSync()).toEqual([]);
  });
+
+ it("acknowledges an already-synced snapshot without a redundant cloud write",async()=>{
+  const item:Item={id:"a",name:"Hammer",category:"Tools",location:"Shop",quantity:1,value:10,notes:""};
+  await enqueueSync("a","upsert",item,100,"home");
+  let writes=0;
+  let baselineWrites=0;
+  const transport=createSafeOfflineTransport({
+   householdId:"home",readLocal:async()=>item,
+   readBaseline:async()=>({revision:"r1",value:item}),
+   readRemote:async()=>({revision:"r1",value:item}),
+   write:async request=>{writes++;return {status:"saved" as const,revision:"r2",value:request.value};},
+   saveBaseline:async()=>{baselineWrites++;}
+  });
+  const result=await runSyncQueue(transport,{householdId:"home",now:()=>100});
+  expect(result).toEqual({sent:1,failed:0,remaining:false,stopped:"empty"});
+  expect(writes).toBe(0);
+  expect(baselineWrites).toBe(0);
+  expect(await listPendingSync()).toEqual([]);
+ });
  it("preserves queued edits when the cloud revision has changed",async()=>{
   const item:Item={id:"a",name:"Local Hammer",category:"Tools",location:"Shop",quantity:1,value:10,notes:""};
   const baselineItem={...item,name:"Original Hammer"};
