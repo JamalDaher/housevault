@@ -5,7 +5,8 @@ import {enqueueSync,listPendingSync} from "./syncQueue";
 import {selectTrackedEdits} from "./selectTrackedEdits";
 
 /** Local-only opt-in queue scan. Never sends network requests or queues deletions. */
-export async function queueTrackedHouseholdEdits(householdId:string):Promise<number>{
+const activeScans=new Map<string,Promise<number>>();
+async function scanHousehold(householdId:string):Promise<number>{
  if(!householdId.trim())throw new Error("Household required");
  const local=await loadInventory();
  const pending=await listPendingSync();
@@ -21,4 +22,15 @@ export async function queueTrackedHouseholdEdits(householdId:string):Promise<num
   count++;
  }
  return count;
+}
+
+/** Serialize scans per household within this app instance, including manual scans. */
+export function queueTrackedHouseholdEdits(householdId:string):Promise<number>{
+ if(!householdId.trim())return Promise.reject(new Error("Household required"));
+ const existing=activeScans.get(householdId);
+ if(existing)return existing;
+ const task=scanHousehold(householdId);
+ activeScans.set(householdId,task);
+ void task.finally(()=>{if(activeScans.get(householdId)===task)activeScans.delete(householdId);}).catch(()=>{});
+ return task;
 }
