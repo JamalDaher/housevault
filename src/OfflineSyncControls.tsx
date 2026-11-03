@@ -26,12 +26,15 @@ export default function OfflineSyncControls({client,households}:{
   return()=>{active=false;clearInterval(timer);};
  },[autoQueue,household,households]);
  async function inspect(){
+  if(!household||busy)return;
+  setBusy(true);setMessage("");
   try{
    const entries=await listPendingSync();
    const matching=entries.filter(entry=>entry.householdId===household);
    const legacy=entries.filter(entry=>!entry.householdId);
    setMessage(matching.length+" pending for selected household. "+legacy.length+" older unscoped changes require review.");
   }catch{setMessage("Unable to inspect the local queue. No cloud changes were sent.");}
+  finally{setBusy(false);}
  }
  async function queueEdits(){
   if(!household||busy)return;
