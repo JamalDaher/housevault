@@ -17,7 +17,7 @@ export function createCloudRevisionApi<T>(client:CloudRevisionClient<T>,househol
  const write:RevisionTransport<T>=async input=>{
   const {data,error}=await client.rpc("write_inventory_revision",{p_household:householdId,p_item:input.itemId,p_expected:input.expectedRevision,p_payload:input.value});
   if(error){
-   if(error.code==="40001"){
+   if(error.code==="HV001"){
     const remote=await read(input.itemId);
     return {status:"conflict",revision:remote?.revision??null,remote:remote?.value??null};
    }
