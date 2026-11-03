@@ -15,7 +15,7 @@ export async function runSyncQueue(transport:SyncTransport,options:SyncRunnerOpt
  if(!Number.isInteger(limit)||limit<1||limit>100)throw new Error("Invalid sync batch limit");
  let sent=0,failed=0;
  for(let i=0;i<limit;i++){
-  if(!online())return {sent,failed,remaining:true,stopped:"offline"};
+  if(!online())return {sent,failed,remaining:(await listPendingSync()).some(entry=>options.householdId===undefined||entry.householdId===options.householdId),stopped:"offline"};
   const entry=await claimNextSync(now(),30_000,options.householdId);
   if(!entry)return {sent,failed,remaining:(await listPendingSync()).some(entry=>options.householdId===undefined||entry.householdId===options.householdId),stopped:"empty"};
   try{
