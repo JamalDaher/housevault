@@ -93,3 +93,22 @@ describe("atomic household queue deduplication",()=>{
   expect(await listPendingSync()).toHaveLength(2);
  });
 });
+
+describe("household outbox lifecycle",()=>{
+ it("allows a fresh edit after the previous queued edit was acknowledged",async()=>{
+  expect(await enqueueUniqueHouseholdUpsert("home","a",{name:"First"},100)).toBe(true);
+  const claimed=await claimNextSync(100,30000,"home");
+  expect(claimed).not.toBeNull();
+  expect(await acknowledgeSync(claimed!.id,claimed!.leaseToken!)).toBe(true);
+  expect(await enqueueUniqueHouseholdUpsert("home","a",{name:"Second"},200)).toBe(true);
+  const pending=await listPendingSync();
+  expect(pending).toHaveLength(1);
+  expect(pending[0].payload).toEqual({name:"Second"});
+ });
+ it("never merges entries across households",async()=>{
+  expect(await enqueueUniqueHouseholdUpsert("home-a","a",{name:"A"},100)).toBe(true);
+  expect(await enqueueUniqueHouseholdUpsert("home-b","a",{name:"B"},100)).toBe(true);
+  expect(await enqueueUniqueHouseholdUpsert("home-a","a",{name:"Duplicate"},101)).toBe(false);
+  expect((await listPendingSync()).map(e=>e.householdId).sort()).toEqual(["home-a","home-b"]);
+ });
+});
