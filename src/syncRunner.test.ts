@@ -2,6 +2,7 @@ import "fake-indexeddb/auto";
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, it } from "vitest";
 import { enqueueSync, listPendingSync } from "./syncQueue";
+import { CloudRevisionConflict } from "./syncRevision";
 import { runSyncQueue, syncStatus } from "./syncRunner";
 beforeEach(()=>{Object.defineProperty(globalThis,"indexedDB",{configurable:true,value:new IDBFactory()});});
 describe("opt-in sync runner",()=>{
@@ -28,6 +29,14 @@ describe("opt-in sync runner",()=>{
   expect(pending).toHaveLength(1);
   expect(pending[0].attempts).toBe(1);
   expect(pending[0].nextAttemptAt).toBe(1100);
+ });
+ it("reports a revision conflict without discarding the queued change",async()=>{
+  await enqueueSync("a","upsert",{name:"Local"},100);
+  const result=await runSyncQueue(async()=>{throw new CloudRevisionConflict("remote-v2",{name:"Remote"});},{now:()=>100});
+  expect(result.stopped).toBe("conflict");
+  const pending=await listPendingSync();
+  expect(pending).toHaveLength(1);
+  expect(pending[0].payload).toEqual({name:"Local"});
  });
  it("bounds each run to avoid monopolizing the event loop",async()=>{
   await enqueueSync("a","delete",null,100);
