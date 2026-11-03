@@ -1,3 +1,4 @@
+import "./accountFolds.css";
 import type { Item } from "./domain";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { createClient, type Session } from "@supabase/supabase-js";
