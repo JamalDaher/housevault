@@ -1,11 +1,10 @@
 import {useState} from "react";
 import type {Item} from "./domain";
 import type {CloudRevisionClient} from "./cloudRevisionApi";
-import {listPendingSync} from "./syncQueue";
+import {listPendingSync,enqueueSync,refreshQueuedUpsert} from "./syncQueue";
 import {syncSelectedHousehold} from "./syncSelectedHousehold";
 import {loadInventory} from "./indexedStorage";
 import {readSyncBaseline} from "./syncBaselines";
-import {enqueueSync} from "./syncQueue";
 import {selectTrackedEdits} from "./selectTrackedEdits";
 
 /** Manual-only queued edit delivery. No automatic upload or delete. */
@@ -39,6 +38,30 @@ export default function OfflineSyncControls({client,households}:{
   }catch{setMessage("Could not prepare offline edits. No cloud changes were sent.");}
   finally{setBusy(false);}
  }
+ async function refreshEdits(){
+  if(!household||busy)return;
+  setBusy(true);setMessage("");
+  try{
+   const local=await loadInventory();
+   const pending=(await listPendingSync()).filter(e=>e.householdId===household&&e.operation==="upsert");
+   const current=new Map(local.map(item=>[item.id,item]));
+   const updates:Item[]=[];
+   for(const entry of pending){
+    const item=current.get(entry.itemId);
+    if(!item||item.id.startsWith("demo-")||item.id.startsWith("__housevault_test_"))continue;
+    const baseline=await readSyncBaseline(household,item.id);
+    if(!baseline)continue;
+    const eligible=selectTrackedEdits({items:[item],baselines:new Map([[item.id,baseline]]),queuedIds:new Set()});
+    if(eligible.length)updates.push(item);
+   }
+   if(!updates.length){setMessage("No eligible pending edits need refreshing.");return;}
+   if(!window.confirm("Refresh "+updates.length+" queued edit snapshots from current local inventory? No cloud upload occurs."))return;
+   let refreshed=0;
+   for(const item of updates)if(await refreshQueuedUpsert(household,item.id,item))refreshed++;
+   setMessage(refreshed+" queued edits refreshed. Leased or ambiguous entries were left unchanged.");
+  }catch{setMessage("Could not refresh pending edits; the queue was not uploaded.");}
+  finally{setBusy(false);}
+ }
  async function send(){
   if(!household||!households.some(h=>h.id===household)||busy)return;
   if(!window.confirm("Send queued attachment-free edits to this household? Conflicts will be preserved for review. No deletions will be sent."))return;
@@ -59,6 +82,7 @@ export default function OfflineSyncControls({client,households}:{
   </select>
   <button type="button" disabled={!household||busy} onClick={()=>void queueEdits()}>Queue tracked local edits</button>
   <button type="button" disabled={!household||busy} onClick={()=>void inspect()}>Inspect queue</button>
+  <button type="button" disabled={!household||busy} onClick={()=>void refreshEdits()}>Refresh queued edits</button>
   <button type="button" disabled={!household||busy} onClick={()=>void send()}>{busy?"Sending…":"Send queued edits"}</button>
   {message&&<p role="status">{message}</p>}
  </div>;
