@@ -70,3 +70,21 @@ export async function retrySync(id:string,token:string,now=Date.now()):Promise<b
   };
  });
 }
+
+/** Replace an unleased pending upsert snapshot without changing its identity.
+ * Refuses ambiguous duplicates or an in-flight lease.
+ */
+export async function refreshQueuedUpsert(householdId:string,itemId:string,payload:unknown,now=Date.now()):Promise<boolean>{
+ if(!householdId.trim()||!itemId.trim())throw new Error("Household and item IDs required");
+ return transact("readwrite",(store,resolve,reject)=>{
+  const req=store.getAll();
+  req.onerror=()=>reject(req.error??new Error("Unable to inspect queued changes"));
+  req.onsuccess=()=>{
+   const matches=(req.result as SyncEntry[]).filter(e=>e.householdId===householdId&&e.itemId===itemId);
+   if(matches.length!==1||matches[0].operation!=="upsert"||matches[0].leaseUntil>now){resolve(false);return;}
+   const current=matches[0];
+   store.put({...current,payload:snapshot(payload),attempts:0,nextAttemptAt:now,leaseUntil:0,leaseToken:null});
+   resolve(true);
+  };
+ });
+}
