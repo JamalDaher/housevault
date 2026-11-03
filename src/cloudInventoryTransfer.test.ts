@@ -10,6 +10,11 @@ describe("cloud inventory transfer",()=>{
   expect(rows).toHaveLength(1);
   expect(rows[0].value.id).toBe("one");
  });
+ it("never imports soft-deleted cloud records",async()=>{
+  const client={from:()=>({select:()=>({eq:()=>({limit:async()=>({data:[{item_id:"gone",revision:"r2",payload:item("gone"),deleted_at:"2026-11-03T00:00:00Z"},{item_id:"live",revision:"r1",payload:item("live"),deleted_at:null}],error:null})})})})};
+  const rows=await fetchCloudInventory(client,"household");
+  expect(rows.map(row=>row.itemId)).toEqual(["live"]);
+ });
  it("rejects mismatched identities before any import",async()=>{
   const client={from:()=>({select:()=>({eq:()=>({limit:async()=>({data:[{item_id:"one",revision:"r1",payload:item("other")}],error:null})})})})};
   await expect(fetchCloudInventory(client,"household")).rejects.toThrow("identity");
