@@ -1,5 +1,5 @@
 import type { Item } from "./domain";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { createClient, type Session } from "@supabase/supabase-js";
 import SyncPreview from "./SyncPreview";
 import HouseholdTaxonomy from "./HouseholdTaxonomy";
@@ -8,7 +8,7 @@ const url=import.meta.env.VITE_SUPABASE_URL;
 const key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const client=url&&key?createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 
-function AccountFold({title,count,children}:{title:string;count?:number;children:React.ReactNode}){
+function AccountFold({title,count,children}:{title:string;count?:number;children:ReactNode}){
  const [expanded,setExpanded]=useState(()=>typeof window==="undefined"||!window.matchMedia("(max-width: 680px)").matches);
  return <section className="account-fold"><button type="button" className="account-fold-toggle" aria-expanded={expanded} onClick={()=>setExpanded(value=>!value)}><span>{title}{count!==undefined&&<small> ({count})</small>}</span><span aria-hidden="true">{expanded?"−":"+"}</span></button><div className={expanded?"account-fold-body":"account-fold-body is-collapsed"}>{children}</div></section>;
 }
