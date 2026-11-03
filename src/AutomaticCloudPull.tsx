@@ -156,7 +156,7 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem,
  },[client,household,enabled,uploadEnabled,editEnabled,pullEdits,householdKey,syncEpoch]);
  async function confirmDeletion(itemId:string,name:string){
   if(!enabled||!household||busy||deletionBusy)return;
-  if(!window.confirm('Move cloud record "'+name+'" to recoverable deleted state? This affects other devices. This action cannot be undone from the app yet.'))return;
+  if(!window.confirm('Move cloud record "'+name+'" to recoverable deleted state? This affects other devices. You can restore the cloud record from the recovery section.'))return;
   const currentHousehold=household;
   const currentGeneration=generation.current;
   setDeletionBusy(true);
@@ -168,10 +168,11 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem,
    if(!baseline||!remote)throw new Error("Missing trusted cloud revision");
    const localAgain=(await loadInventory()).find(i=>i.id===itemId);
    if(localAgain)throw new Error("Record exists on this device");
+   if(generation.current!==currentGeneration||!enabled||household!==currentHousehold)throw new Error("Household changed; deletion cancelled");
    await submitConfirmedTombstone({client,confirmed:true,householdId:currentHousehold,itemId,local:null,baseline,remote});
    if(generation.current===currentGeneration){
     setDeletionReview(rows=>rows.filter(row=>row.itemId!==itemId));
-    setMissingLocally(rows=>rows.filter(row=>row!==name));
+    // Keep the missing-local warning until the next refresh; names are not unique item identifiers.
     setStatus("Cloud record marked deleted. Its data is retained for recovery.");
    }
   }catch(error){
