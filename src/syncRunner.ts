@@ -1,10 +1,11 @@
+import { CloudRevisionConflict } from "./syncRevision";
 import { acknowledgeSync, claimNextSync, retrySync, type SyncEntry } from "./syncQueue";
 
 /** Transport is supplied by a future authenticated cloud integration.
  * The runner never starts itself or makes network requests without a caller.
  */
 export type SyncTransport = (entry:SyncEntry)=>Promise<void>;
-export type SyncRunResult = { sent:number; failed:number; remaining:boolean; stopped:"empty"|"offline"|"failed"|"limit" };
+export type SyncRunResult = { sent:number; failed:number; remaining:boolean; stopped:"empty"|"offline"|"failed"|"conflict"|"limit" };
 export type SyncRunnerOptions = { online?:()=>boolean; now?:()=>number; maxEntries?:number };
 export async function runSyncQueue(transport:SyncTransport,options:SyncRunnerOptions={}):Promise<SyncRunResult>{
  const online=options.online??(()=>typeof navigator==="undefined"||navigator.onLine!==false);
@@ -24,8 +25,7 @@ export async function runSyncQueue(transport:SyncTransport,options:SyncRunnerOpt
    // Never discard an entry after a failed upload or acknowledgement.
    await retrySync(entry.id,entry.leaseToken!,now());
    failed++;
-   void error;
-   return {sent,failed,remaining:true,stopped:"failed"};
+   return {sent,failed,remaining:true,stopped:error instanceof CloudRevisionConflict?"conflict":"failed"};
   }
  }
  return {sent,failed,remaining:true,stopped:"limit"};
