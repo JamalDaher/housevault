@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { enqueueSync, listPendingSync } from "./syncQueue";
 import { CloudRevisionConflict } from "./syncRevision";
 import { runSyncQueue, syncStatus } from "./syncRunner";
+import {createSafeOfflineTransport} from "./safeOfflineTransport";
+import type {Item} from "./domain";
 beforeEach(()=>{Object.defineProperty(globalThis,"indexedDB",{configurable:true,value:new IDBFactory()});});
 describe("opt-in sync runner",()=>{
  it("sends and acknowledges pending changes only when invoked",async()=>{
@@ -108,5 +110,22 @@ describe("deferred retry reporting",()=>{
   expect(first.stopped).toBe("failed");
   const second=await runSyncQueue(async()=>undefined,{now:()=>101,householdId:"home"});
   expect(second).toEqual({sent:0,failed:0,remaining:true,stopped:"deferred"});
+ });
+});
+
+describe("queue-to-transport integration",()=>{
+ it("acknowledges a revision-guarded successful upload",async()=>{
+  const item:Item={id:"a",name:"Hammer",category:"Tools",location:"Shop",quantity:1,value:10,notes:""};
+  await enqueueSync("a","upsert",item,100,"home");
+  const writes:string[]=[];
+  const transport=createSafeOfflineTransport({
+   householdId:"home",readLocal:async()=>item,readBaseline:async()=>null,readRemote:async()=>null,
+   write:async request=>{writes.push(request.itemId);return {status:"saved" as const,revision:"r1",value:request.value};},
+   saveBaseline:async()=>undefined
+  });
+  const result=await runSyncQueue(transport,{householdId:"home",now:()=>100});
+  expect(result).toEqual({sent:1,failed:0,remaining:false,stopped:"empty"});
+  expect(writes).toEqual(["a"]);
+  expect(await listPendingSync()).toEqual([]);
  });
 });
