@@ -4,16 +4,16 @@ import {saveWithRevision,type RevisionTransport} from "./syncRevision";
 
 /** Cloud metadata transfer: no attachments, deletions, or local writes. */
 export type RevisionListClient={
- from:(table:string)=>{select:(columns:string)=>{eq:(column:string,value:string)=>{limit:(count:number)=>Promise<{data:{item_id:string;revision:string;payload:Item}[]|null;error:{message:string}|null}>}}};
+ from:(table:string)=>{select:(columns:string)=>{eq:(column:string,value:string)=>{limit:(count:number)=>Promise<{data:{item_id:string;revision:string;payload:Item;deleted_at?:string|null}[]|null;error:{message:string}|null}>}}};
 };
 export async function fetchCloudInventory(client:RevisionListClient,householdId:string):Promise<CloudSnapshot<Item>[]>{
  if(!householdId.trim())throw new Error("Household required");
- const {data,error}=await client.from("inventory_revisions").select("item_id,revision,payload").eq("household_id",householdId).limit(1001);
+ const {data,error}=await client.from("inventory_revisions").select("item_id,revision,payload,deleted_at").eq("household_id",householdId).limit(1001);
  if(error||!data)throw new Error("Cloud inventory could not be downloaded");
  if(data.length>1000)throw new Error("Cloud inventory exceeds the safe transfer limit");
  const result:CloudSnapshot<Item>[]=[];
  for(const row of data){
-  if(row.item_id.startsWith("__housevault_test_"))continue;
+  if(row.item_id.startsWith("__housevault_test_")||row.deleted_at)continue;
   if(!row.payload||row.payload.id!==row.item_id||!row.revision)throw new Error("Cloud inventory contains invalid record identity");
   result.push({itemId:row.item_id,revision:row.revision,value:row.payload});
  }
