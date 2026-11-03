@@ -168,7 +168,12 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem,
    if(generation.current!==token||!enabled||household!==selectedHousehold)throw new Error("Household changed; recovery cancelled");
    if((await loadInventory()).some(i=>i.id===itemId))throw new Error("Item already exists on this device");
    if(generation.current!==token||!enabled||household!==selectedHousehold)throw new Error("Household changed; recovery cancelled");
-   await importCallback.current(structuredClone(remote.value));
+   const verified=await createCloudRevisionApi<Item>(client,selectedHousehold).read(itemId);
+   if(!verified||verified.revision!==remote.revision||!sameItem(verified.value,remote.value))throw new Error("Cloud item changed; refresh recovery review");
+   if(generation.current!==token||!enabled||household!==selectedHousehold)throw new Error("Household changed; recovery cancelled");
+   if((await loadInventory()).some(i=>i.id===itemId))throw new Error("Item already exists on this device");
+   if(generation.current!==token||!enabled||household!==selectedHousehold)throw new Error("Household changed; recovery cancelled");
+   await importCallback.current(structuredClone(verified.value));
    await saveSyncBaseline(selectedHousehold,itemId,{revision:remote.revision,value:structuredClone(remote.value)});
    if(generation.current===token){
     setMissingLocally(rows=>rows.filter(row=>row.itemId!==itemId));
