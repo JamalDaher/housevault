@@ -4,8 +4,9 @@ import type {CloudRevisionClient} from "./cloudRevisionApi";
 import {listPendingSync} from "./syncQueue";
 import {syncSelectedHousehold} from "./syncSelectedHousehold";
 import {loadInventory} from "./indexedStorage";
-import {readSyncBaseline,sameItem,hasAttachments} from "./syncBaselines";
+import {readSyncBaseline} from "./syncBaselines";
 import {enqueueSync} from "./syncQueue";
+import {selectTrackedEdits} from "./selectTrackedEdits";
 
 /** Manual-only queued edit delivery. No automatic upload or delete. */
 export default function OfflineSyncControls({client,households}:{
@@ -28,12 +29,9 @@ export default function OfflineSyncControls({client,households}:{
    const local=await loadInventory();
    const pending=await listPendingSync();
    const queued=new Set(pending.filter(e=>e.householdId===household).map(e=>e.itemId));
-   const eligible:Item[]=[];
-   for(const item of local){
-    if(item.id.startsWith("demo-")||item.id.startsWith("__housevault_test_")||hasAttachments(item)||queued.has(item.id))continue;
-    const baseline=await readSyncBaseline(household,item.id);
-    if(baseline&&!sameItem(baseline.value,item))eligible.push(item);
-   }
+   const baselines=new Map<string,Awaited<ReturnType<typeof readSyncBaseline>>>();
+   for(const item of local)baselines.set(item.id,await readSyncBaseline(household,item.id));
+   const eligible=selectTrackedEdits({items:local,baselines,queuedIds:queued});
    if(!eligible.length){setMessage("No eligible tracked edits to queue. New items, attachments and deletions are excluded.");return;}
    if(!window.confirm("Queue "+eligible.length+" tracked inventory edits for this household? No network upload occurs until you select Send queued edits."))return;
    for(const item of eligible)await enqueueSync(item.id,"upsert",item,Date.now(),household);
