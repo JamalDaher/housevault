@@ -27,7 +27,11 @@ export function createSafeOfflineTransport(deps:Dependencies){
   ]);
   if(!local||!sameItem(local,queued))throw new Error("Local inventory changed since queued edit");
   const decision=planPendingChange({itemId:entry.itemId,local,baseline,remote});
-  if(decision.kind==="unchanged")return;
+  if(decision.kind==="unchanged"){
+   // A successful no-op is safe only if the queued snapshot still matches the trusted baseline.
+   if(!baseline||!remote||remote.deleted||remote.revision!==baseline.revision)throw new CloudRevisionConflict(remote?.revision??null,remote?.value??null);
+   return;
+  }
   if(decision.kind==="conflict"||decision.kind==="delete")throw new CloudRevisionConflict(remote?.revision??null,remote?.value??null);
   const saved=await saveWithRevision({
    itemId:entry.itemId,
