@@ -5,8 +5,7 @@ import {enqueueSync,type SyncEntry} from "./syncQueue";
 
 /** Persist an explicit household's eligible local changes for later delivery.
  * Deletions stay excluded until the confirmed cloud deletion transport is wired.
- * The outbox currently has no household partition, so do not enqueue a second
- * household into the same queue; callers must enforce this before invoking.
+ * Each queued entry carries its household ID for authenticated delivery.
  */
 export async function queueHouseholdChanges(input:{
  householdId:string;previous:Item[];current:Item[];
@@ -16,7 +15,7 @@ export async function queueHouseholdChanges(input:{
  const saved:SyncEntry[]=[];
  for(const change of candidates){
   if(change.operation!=="upsert"||!change.payload)continue;
-  saved.push(await enqueueSync(change.itemId,"upsert",change.payload));
+  saved.push(await enqueueSync(change.itemId,"upsert",change.payload,Date.now(),input.householdId));
  }
  return saved;
 }
