@@ -26,10 +26,12 @@ export default function OfflineSyncControls({client,households}:{
   return()=>{active=false;clearInterval(timer);};
  },[autoQueue,household,households]);
  async function inspect(){
-  const entries=await listPendingSync();
-  const matching=entries.filter(entry=>entry.householdId===household);
-  const legacy=entries.filter(entry=>!entry.householdId);
-  setMessage(matching.length+" pending for selected household. "+legacy.length+" older unscoped changes require review.");
+  try{
+   const entries=await listPendingSync();
+   const matching=entries.filter(entry=>entry.householdId===household);
+   const legacy=entries.filter(entry=>!entry.householdId);
+   setMessage(matching.length+" pending for selected household. "+legacy.length+" older unscoped changes require review.");
+  }catch{setMessage("Unable to inspect the local queue. No cloud changes were sent.");}
  }
  async function queueEdits(){
   if(!household||busy)return;
@@ -71,7 +73,8 @@ export default function OfflineSyncControls({client,households}:{
   setBusy(true);setMessage("");
   try{
    const result=await syncSelectedHousehold(client,household);
-   setMessage(result.sent+" sent; "+result.failed+" failed. "+(result.remaining?"Some queued work remains.":"No pending work for this household.")+" Status: "+result.stopped+".");
+   const detail=result.stopped==="deferred"?"Queued edits are waiting for their retry window.":result.stopped==="conflict"?"A cloud conflict needs review before retrying.":result.stopped==="offline"?"Device is offline; nothing further was sent.":result.stopped==="failed"?"Delivery failed; the queued edit was retained for retry.":result.stopped==="limit"?"Batch limit reached; more changes are queued.":result.remaining?"Some queued work remains.":"No pending work for this household.";
+   setMessage(result.sent+" sent; "+result.failed+" failed. "+detail);
   }catch{setMessage("Could not synchronize. Queued changes remain stored on this device.");}
   finally{setBusy(false);}
  }
