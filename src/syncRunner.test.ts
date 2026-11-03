@@ -149,4 +149,23 @@ describe("queue-to-transport integration",()=>{
   expect((await listPendingSync()).map(e=>e.payload)).toEqual([item]);
  });
 
+ it("keeps stale queued edits when the local item changes before upload",async()=>{
+  const queued:Item={id:"a",name:"Original Hammer",category:"Tools",location:"Shop",quantity:1,value:10,notes:""};
+  const latest={...queued,name:"Newer local edit"};
+  await enqueueSync("a","upsert",queued,100,"home");
+  let writes=0;
+  const transport=createSafeOfflineTransport({
+   householdId:"home",readLocal:async()=>latest,readBaseline:async()=>null,readRemote:async()=>null,
+   write:async request=>{writes++;return {status:"saved" as const,revision:"r1",value:request.value};},
+   saveBaseline:async()=>undefined
+  });
+  const result=await runSyncQueue(transport,{householdId:"home",now:()=>100});
+  expect(result.stopped).toBe("failed");
+  expect(writes).toBe(0);
+  const pending=await listPendingSync();
+  expect(pending).toHaveLength(1);
+  expect(pending[0].payload).toEqual(queued);
+  expect(pending[0].attempts).toBe(1);
+ });
+
 });
