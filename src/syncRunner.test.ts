@@ -45,6 +45,14 @@ describe("opt-in sync runner",()=>{
   expect(result.stopped).toBe("limit");
   expect(await listPendingSync()).toHaveLength(1);
  });
+ it("reports delayed retries as remaining work, not an empty queue",async()=>{
+  await enqueueSync("a","upsert",{name:"A"},100);
+  const claimed=await import("./syncQueue").then(q=>q.claimNextSync(100));
+  await import("./syncQueue").then(q=>q.retrySync(claimed!.id,claimed!.leaseToken!,100));
+  const result=await runSyncQueue(async()=>{throw new Error("Should not send before retry");},{now:()=>101});
+  expect(result).toEqual({sent:0,failed:0,remaining:true,stopped:"empty"});
+  expect(await listPendingSync()).toHaveLength(1);
+ });
  it("derives clear UI status without triggering network requests",()=>{
   expect(syncStatus({online:false,pending:2,running:false,error:true})).toBe("offline");
   expect(syncStatus({online:true,pending:2,running:true,error:false})).toBe("syncing");
