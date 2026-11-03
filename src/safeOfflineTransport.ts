@@ -6,6 +6,7 @@ import {CloudRevisionConflict,saveWithRevision,type RevisionTransport} from "./s
 import {sameItem} from "./syncBaselines";
 
 type Dependencies={
+ householdId:string;
  readLocal:(itemId:string)=>Promise<Item|null>;
  readBaseline:(itemId:string)=>Promise<SyncBaseline|null>;
  readRemote:(itemId:string)=>Promise<{revision:string;value:Item;deleted?:boolean}|null>;
@@ -19,6 +20,7 @@ type Dependencies={
  */
 export function createSafeOfflineTransport(deps:Dependencies){
  return async (entry:SyncEntry):Promise<void>=>{
+  if(!deps.householdId.trim()||entry.householdId!==deps.householdId)throw new Error("Queued change belongs to another or unknown household");
   if(entry.operation!=="upsert")throw new Error("Queued deletion requires explicit review");
   const queued=entry.payload as Item;
   if(!queued||queued.id!==entry.itemId)throw new Error("Queued inventory identity mismatch");
