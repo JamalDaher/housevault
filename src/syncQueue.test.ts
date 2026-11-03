@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, it } from "vitest";
-import { acknowledgeSync, claimNextSync, enqueueSync, listPendingSync, retrySync, refreshQueuedUpsert } from "./syncQueue";
+import { acknowledgeSync, claimNextSync, enqueueSync, listPendingSync, retrySync, refreshQueuedUpsert, enqueueUniqueHouseholdUpsert } from "./syncQueue";
 beforeEach(()=>{Object.defineProperty(globalThis,"indexedDB",{configurable:true,value:new IDBFactory()});});
 describe("durable sync outbox",()=>{
  it("persists queued changes across independent calls and keeps payload snapshots",async()=>{
@@ -76,5 +76,20 @@ describe("queued edit refresh",()=>{
   await enqueueSync("a","upsert",{name:"One"},100,"home");
   await enqueueSync("a","upsert",{name:"Two"},101,"home");
   expect(await refreshQueuedUpsert("home","a",{name:"New"},110)).toBe(false);
+ });
+});
+
+describe("atomic household queue deduplication",()=>{
+ it("allows only one pending entry for concurrent same-household edits",async()=>{
+  const results=await Promise.all(Array.from({length:8},()=>enqueueUniqueHouseholdUpsert("home","a",{name:"Edited"},100)));
+  expect(results.filter(Boolean)).toHaveLength(1);
+  expect(await listPendingSync()).toHaveLength(1);
+ });
+ it("permits separate households and blocks duplicates even when leased",async()=>{
+  expect(await enqueueUniqueHouseholdUpsert("home","a",{name:"A"},100)).toBe(true);
+  await claimNextSync(100,30000,"home");
+  expect(await enqueueUniqueHouseholdUpsert("home","a",{name:"B"},101)).toBe(false);
+  expect(await enqueueUniqueHouseholdUpsert("other","a",{name:"B"},101)).toBe(true);
+  expect(await listPendingSync()).toHaveLength(2);
  });
 });
