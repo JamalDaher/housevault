@@ -16,12 +16,13 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem}
  const [uploadEnabled,setUploadEnabled]=useState(false);
  const [divergent,setDivergent]=useState<string[]>([]);
  const [editEnabled,setEditEnabled]=useState(false);
+ const [missingLocally,setMissingLocally]=useState<string[]>([]);
  const inFlight=useRef(false);
  const householdKey=households.map(h=>h.id).join("|");
  const importCallback=useRef(onImportCloudItem);
  importCallback.current=onImportCloudItem;
  const generation=useRef(0);
- useEffect(()=>{generation.current++;setEnabled(false);setUploadEnabled(false);setEditEnabled(false);setDivergent([]);setStatus("Disabled — no automatic changes.");},[client]);
+ useEffect(()=>{generation.current++;setEnabled(false);setUploadEnabled(false);setEditEnabled(false);setDivergent([]);setMissingLocally([]);setStatus("Disabled — no automatic changes.");},[client]);
  useEffect(()=>{
   if(!enabled||!households.some(h=>h.id===household))return;
   let active=true;
@@ -63,13 +64,24 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem}
      differences.push(device.name);
     }
     if(active&&generation.current===token)setDivergent(differences);
-    const eligible=remote.filter(r=>!ids.has(r.itemId)&&!r.value.photo&&!r.value.photos?.length&&!r.value.documents?.length);
+    // A known revision with no local item may indicate deletion. Do not resurrect it.
+    const eligible:typeof remote=[];
+    const missing:string[]=[];
+    for(const row of remote){
+     if(!active||generation.current!==token)break;
+     if(ids.has(row.itemId))continue;
+     const baseline=await readSyncBaseline(household,row.itemId);
+     if(!active||generation.current!==token)break;
+     if(baseline){missing.push(row.value.name);continue;}
+     if(!row.value.photo&&!row.value.photos?.length&&!row.value.documents?.length)eligible.push(row);
+    }
+    if(active&&generation.current===token)setMissingLocally(missing);
     let imported=0;
     for(const row of eligible){
      if(!active||generation.current!==token)break;
      const latest=await loadInventory();
      if(!active||generation.current!==token)break;
-     if(latest.some(i=>i.id===row.itemId))continue;
+     if(latest.some(i=>i.id===row.itemId)||await readSyncBaseline(household,row.itemId))continue;
      const refreshed=await createCloudRevisionApi<Item>(client,household).read(row.itemId);
      if(!active||generation.current!==token)break;
      if(!refreshed||refreshed.revision!==row.revision||JSON.stringify(refreshed.value)!==JSON.stringify(row.value))continue;
@@ -108,5 +120,5 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem}
   document.addEventListener("visibilitychange",visible);
   return()=>{active=false;generation.current++;window.clearInterval(interval);window.removeEventListener("online",online);window.removeEventListener("focus",focus);document.removeEventListener("visibilitychange",visible);};
  },[client,household,enabled,uploadEnabled,editEnabled,householdKey]);
- return <section className="account-card"><h3>Automatic inventory synchronization (beta)</h3><p className="account-helper">Opt in to check for new cloud records every minute while this app is open. Only attachment-free records missing on this device are imported. Existing records are never overwritten. Optional create-only uploads are available. Opt-in edits are uploaded only when a verified matching revision baseline exists. Deletions and attachments are not synchronized, and this does not run when the app is closed.</p><label htmlFor="auto-pull-household">Household</label><select id="auto-pull-household" disabled={enabled||busy} value={household} onChange={e=>{setHousehold(e.target.value);setStatus("Disabled — no automatic changes.");setDivergent([]);}}><option value="">Select household</option>{households.filter(h=>h.name!=="HouseVault Sync Test").map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select><label><input type="checkbox" checked={enabled} disabled={!household} onChange={e=>{setEnabled(e.target.checked);if(!e.target.checked){setUploadEnabled(false);setEditEnabled(false);setDivergent([]);setStatus("Disabled — no automatic changes.");}}}/> Enable automatic imports while app is open</label><label><input type="checkbox" checked={uploadEnabled} disabled={!enabled||busy} onChange={e=>{if(e.target.checked&&!window.confirm("Automatically create cloud copies of local-only attachment-free records while this app is open?"))return;setUploadEnabled(e.target.checked);}}/> Also upload new local-only records</label><label><input type="checkbox" checked={editEnabled} disabled={!enabled||busy} onChange={e=>{if(e.target.checked&&!window.confirm("Automatically upload edits to cloud records with a verified revision baseline? Conflicts remain untouched."))return;setEditEnabled(e.target.checked);}}/> Also synchronize safe existing-item edits</label><p role="status">{busy?"Checking cloud…":status}</p>{divergent.length>0&&<div role="alert"><strong>{divergent.length} differing cloud/device records need review.</strong><p>Automatic transfer will not overwrite these records. Open Cloud transfer and compare to inspect them.</p><p>{divergent.slice(0,8).join(", ")}{divergent.length>8?"…":""}</p></div>}</section>;
+ return <section className="account-card"><h3>Automatic inventory synchronization (beta)</h3><p className="account-helper">Opt in to check for new cloud records every minute while this app is open. Only attachment-free records missing on this device are imported. Existing records are never overwritten. Optional create-only uploads are available. Opt-in edits are uploaded only when a verified matching revision baseline exists. Deletions and attachments are not synchronized, and this does not run when the app is closed.</p><label htmlFor="auto-pull-household">Household</label><select id="auto-pull-household" disabled={enabled||busy} value={household} onChange={e=>{setHousehold(e.target.value);setStatus("Disabled — no automatic changes.");setDivergent([]);}}><option value="">Select household</option>{households.filter(h=>h.name!=="HouseVault Sync Test").map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select><label><input type="checkbox" checked={enabled} disabled={!household} onChange={e=>{setEnabled(e.target.checked);if(!e.target.checked){setUploadEnabled(false);setEditEnabled(false);setDivergent([]);setMissingLocally([]);setStatus("Disabled — no automatic changes.");}}}/> Enable automatic imports while app is open</label><label><input type="checkbox" checked={uploadEnabled} disabled={!enabled||busy} onChange={e=>{if(e.target.checked&&!window.confirm("Automatically create cloud copies of local-only attachment-free records while this app is open?"))return;setUploadEnabled(e.target.checked);}}/> Also upload new local-only records</label><label><input type="checkbox" checked={editEnabled} disabled={!enabled||busy} onChange={e=>{if(e.target.checked&&!window.confirm("Automatically upload edits to cloud records with a verified revision baseline? Conflicts remain untouched."))return;setEditEnabled(e.target.checked);}}/> Also synchronize safe existing-item edits</label><p role="status">{busy?"Checking cloud…":status}</p>{missingLocally.length>0&&<div role="alert"><strong>{missingLocally.length} previously synced records are missing on this device.</strong><p>They will not be re-imported automatically. Deletion synchronization is not yet supported; review before restoring them.</p><p>{missingLocally.slice(0,8).join(", ")}{missingLocally.length>8?"…":""}</p></div>}{divergent.length>0&&<div role="alert"><strong>{divergent.length} differing cloud/device records need review.</strong><p>Automatic transfer will not overwrite these records. Open Cloud transfer and compare to inspect them.</p><p>{divergent.slice(0,8).join(", ")}{divergent.length>8?"…":""}</p></div>}</section>;
 }
