@@ -1,7 +1,7 @@
 import type {Item} from "./domain";
 import {loadInventory} from "./indexedStorage";
 import {readSyncBaseline} from "./syncBaselines";
-import {enqueueSync,listPendingSync} from "./syncQueue";
+import {enqueueUniqueHouseholdUpsert,listPendingSync} from "./syncQueue";
 import {selectTrackedEdits} from "./selectTrackedEdits";
 
 /** Local-only opt-in queue scan. Never sends network requests or queues deletions. */
@@ -16,10 +16,7 @@ async function scanHousehold(householdId:string):Promise<number>{
  const eligible:Item[]=selectTrackedEdits({items:local,baselines,queuedIds:queued});
  let count=0;
  for(const item of eligible){
-  // Recheck queue to reduce duplicate writes when another scan ran concurrently.
-  if((await listPendingSync()).some(e=>e.householdId===householdId&&e.itemId===item.id))continue;
-  await enqueueSync(item.id,"upsert",item,Date.now(),householdId);
-  count++;
+  if(await enqueueUniqueHouseholdUpsert(householdId,item.id,item))count++;
  }
  return count;
 }
