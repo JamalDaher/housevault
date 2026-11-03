@@ -11,6 +11,8 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem}
  const [status,setStatus]=useState("Disabled — no automatic changes.");
  const [busy,setBusy]=useState(false);
  const inFlight=useRef(false);
+ const importCallback=useRef(onImportCloudItem);
+ importCallback.current=onImportCloudItem;
  const generation=useRef(0);
  useEffect(()=>{generation.current++;setEnabled(false);setStatus("Disabled — no automatic changes.");},[client]);
  useEffect(()=>{
@@ -31,7 +33,7 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem}
      if(!active||generation.current!==token)break;
      const latest=await loadInventory();
      if(latest.some(i=>i.id===row.itemId))continue;
-     await onImportCloudItem(structuredClone(row.value));
+     await importCallback.current(structuredClone(row.value));
      imported++;
     }
     if(active&&generation.current===token)setStatus(imported?"Imported "+imported+" new cloud records. Existing records preserved.":"Checked cloud: no new attachment-free records.");
@@ -44,6 +46,6 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem}
   const online=()=>void tick();
   window.addEventListener("online",online);
   return()=>{active=false;generation.current++;window.clearInterval(interval);window.removeEventListener("online",online);};
- },[client,household,enabled,households,onImportCloudItem]);
+ },[client,household,enabled,households]);
  return <section className="account-card"><h3>Automatic cloud-only imports (beta)</h3><p className="account-helper">Opt in to check for new cloud records every minute while this app is open. Only attachment-free records missing on this device are imported. Existing records are never overwritten. This does not upload edits, synchronize deletions, or run when the app is closed.</p><label htmlFor="auto-pull-household">Household</label><select id="auto-pull-household" disabled={enabled||busy} value={household} onChange={e=>{setHousehold(e.target.value);setStatus("Disabled — no automatic changes.");}}><option value="">Select household</option>{households.filter(h=>h.name!=="HouseVault Sync Test").map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select><label><input type="checkbox" checked={enabled} disabled={!household} onChange={e=>setEnabled(e.target.checked)}/> Enable automatic imports while app is open</label><p role="status">{busy?"Checking cloud…":status}</p></section>;
 }
