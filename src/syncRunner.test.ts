@@ -15,6 +15,16 @@ describe("opt-in sync runner",()=>{
   expect(sent).toEqual(["a"]);
   expect(await listPendingSync()).toEqual([]);
  });
+ it("runs only the selected household's queued entries",async()=>{
+  await enqueueSync("home-item","upsert",{name:"Home"},100,"home");
+  await enqueueSync("other-item","upsert",{name:"Other"},100,"other");
+  await enqueueSync("legacy-item","upsert",{name:"Legacy"},100);
+  const sent:string[]=[];
+  const result=await runSyncQueue(async entry=>{sent.push(entry.itemId);},{now:()=>100,householdId:"home"});
+  expect(sent).toEqual(["home-item"]);
+  expect(result).toEqual({sent:1,failed:0,remaining:false,stopped:"empty"});
+  expect((await listPendingSync()).map(entry=>entry.itemId).sort()).toEqual(["legacy-item","other-item"]);
+ });
  it("keeps queued changes untouched while offline",async()=>{
   await enqueueSync("a","delete",null,100);
   const result=await runSyncQueue(async()=>{throw new Error("Should not send");},{online:()=>false,now:()=>100});
