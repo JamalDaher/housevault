@@ -529,3 +529,47 @@ main:has(.quick-actions:not([hidden]))>header h1{font-size:clamp(24px,5vw,30px);
  .account-privacy-note,.account-backup-reminder {padding:12px 13px;border-radius:11px}
  .account-backup-reminder {margin-top:12px}
 }
+
+
+/* Account visual system: restrained surfaces, consistent rhythm and clear focus. */
+.cloud-account {--account-ink:#203b4a;--account-muted:#657d8b;--account-line:#dce7e9;--account-accent:#087e75}
+.account-profile-card {background:linear-gradient(115deg,#133746 0%,#155b5a 100%);box-shadow:0 12px 28px rgba(16,61,69,.12)}
+.account-profile-icon {border:1px solid rgba(255,255,255,.2)}
+.account-profile-details h3 {letter-spacing:-.025em}
+.account-workspace>.account-card {border-color:var(--account-line);transition:border-color .2s ease,box-shadow .2s ease}
+.account-workspace>.account-card:focus-within {border-color:#8fc9c2;box-shadow:0 0 0 3px rgba(8,126,117,.08)}
+.account-section-heading {border-bottom:1px solid #edf2f3;padding-bottom:13px;margin-bottom:16px}
+.account-section-heading h3 {font-weight:780;letter-spacing:-.025em}
+.account-count {font-size:12px;min-width:30px;height:30px;border-radius:9px}
+.account-household-list li {background:#fbfdfd;border-color:#e8eff0}
+.account-household-avatar {flex:none}
+.account-household-list strong,.account-member-identity strong {color:var(--account-ink)}
+.account-form input:focus-visible,.account-form select:focus-visible,.account-inline-form input:focus-visible,.account-member-actions select:focus-visible {outline:2px solid #0c9b8b;outline-offset:2px;border-color:#0c9b8b}
+.account-workspace button:focus-visible,.account-signout-row button:focus-visible {outline:2px solid #0c9b8b;outline-offset:3px}
+.account-privacy-note {background:#f4f9f8;border-color:#dceae7}
+@media (max-width:680px) {
+ .account-content {padding:8px 10px 18px}
+ .cloud-account {gap:10px}
+ .account-profile-card {border-radius:13px;box-shadow:none}
+ .account-profile-details h3 {font-size:15px}
+ .account-profile-details p {font-size:11px;line-height:1.35}
+ .account-profile-details .account-kicker {font-size:8px}
+ .account-signout-row {padding:0 3px 3px}
+ .account-workspace {gap:10px}
+ .account-workspace>.account-card {padding:14px;border-radius:13px;box-shadow:0 2px 8px rgba(28,56,75,.035)}
+ .account-section-heading {margin-bottom:13px;padding-bottom:11px}
+ .account-section-heading h3 {font-size:16px}
+ .account-section-heading p {font-size:11px;line-height:1.4}
+ .account-count {min-width:27px;height:27px;padding:0 7px}
+ .account-household-list {margin-bottom:13px}
+ .account-household-list li {padding:10px}
+ .account-household-avatar {width:34px;height:34px;font-size:19px}
+ .account-member-identity {align-items:flex-start}
+ .account-member-actions {justify-content:flex-start}
+ .account-form input,.account-form select,.account-inline-form input {min-height:42px}
+ .account-form button,.account-inline-form button {min-height:42px}
+ .account-privacy-note {padding:12px}
+}
+@media (prefers-reduced-motion:reduce) {
+ .account-workspace>.account-card {transition:none}
+}
