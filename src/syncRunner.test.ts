@@ -128,4 +128,25 @@ describe("queue-to-transport integration",()=>{
   expect(writes).toEqual(["a"]);
   expect(await listPendingSync()).toEqual([]);
  });
+ it("preserves queued edits when the cloud revision has changed",async()=>{
+  const item:Item={id:"a",name:"Local Hammer",category:"Tools",location:"Shop",quantity:1,value:10,notes:""};
+  const baselineItem={...item,name:"Original Hammer"};
+  await enqueueSync("a","upsert",item,100,"home");
+  let writes=0;
+  let baselines=0;
+  const transport=createSafeOfflineTransport({
+   householdId:"home",
+   readLocal:async()=>item,
+   readBaseline:async()=>({revision:"r1",value:baselineItem}),
+   readRemote:async()=>({revision:"r2",value:{...item,name:"Remote Hammer"}}),
+   write:async request=>{writes++;return {status:"saved" as const,revision:"r3",value:request.value};},
+   saveBaseline:async()=>{baselines++;}
+  });
+  const result=await runSyncQueue(transport,{householdId:"home",now:()=>100});
+  expect(result.stopped).toBe("conflict");
+  expect(writes).toBe(0);
+  expect(baselines).toBe(0);
+  expect((await listPendingSync()).map(e=>e.payload)).toEqual([item]);
+ });
+
 });
