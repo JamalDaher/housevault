@@ -6,4 +6,10 @@ function key(household:string,item:string){if(!household||!item)throw new Error(
 export async function readSyncBaseline(household:string,item:string):Promise<SyncBaseline|null>{const db=await database();try{return await new Promise((resolve,reject)=>{const r=db.transaction(STORE,"readonly").objectStore(STORE).get(key(household,item));r.onsuccess=()=>resolve(r.result??null);r.onerror=()=>reject(r.error);});}finally{db.close();}}
 export async function saveSyncBaseline(household:string,item:string,baseline:SyncBaseline):Promise<void>{const db=await database();try{await new Promise<void>((resolve,reject)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(structuredClone(baseline),key(household,item));tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}finally{db.close();}}
 export function sameItem(a:Item,b:Item):boolean{return JSON.stringify(a)===JSON.stringify(b);}
-export function canUploadEdit(local:Item,remote:Item,baseline:SyncBaseline,remoteRevision:string):boolean{return !local.photo&&!local.photos?.length&&!local.documents?.length&&baseline.revision===remoteRevision&&sameItem(remote,baseline.value)&&!sameItem(local,baseline.value);}
+export function hasAttachments(item:Item):boolean{
+ return Boolean(item.photo||item.photos?.length||item.documents?.length);
+}
+export function canDownloadEdit(local:Item,remote:Item,baseline:SyncBaseline):boolean{
+ return !hasAttachments(local)&&!hasAttachments(remote)&&!hasAttachments(baseline.value)&&sameItem(local,baseline.value)&&!sameItem(remote,baseline.value);
+}
+export function canUploadEdit(local:Item,remote:Item,baseline:SyncBaseline,remoteRevision:string):boolean{return !hasAttachments(local)&&!hasAttachments(remote)&&!hasAttachments(baseline.value)&&baseline.revision===remoteRevision&&sameItem(remote,baseline.value)&&!sameItem(local,baseline.value);}

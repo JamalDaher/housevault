@@ -3,7 +3,7 @@ import {loadInventory} from "./indexedStorage";
 import {fetchCloudInventory,uploadNewCloudItem} from "./cloudInventoryTransfer";
 import {createCloudRevisionApi} from "./cloudRevisionApi";
 import {CloudRevisionConflict,saveWithRevision} from "./syncRevision";
-import {readSyncBaseline,saveSyncBaseline,sameItem,canUploadEdit} from "./syncBaselines";
+import {readSyncBaseline,saveSyncBaseline,sameItem,canUploadEdit,canDownloadEdit} from "./syncBaselines";
 import type {Item} from "./domain";
 
 type Client=Parameters<typeof fetchCloudInventory>[0]&Parameters<typeof createCloudRevisionApi<Item>>[0];
@@ -65,7 +65,7 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem,
        }catch(error){if(!(error instanceof CloudRevisionConflict))throw error;}
       }
      }
-     if(pullEdits&&baseline&&sameItem(device,baseline.value)&&!sameItem(row.value,baseline.value)&&!row.value.photo&&!row.value.photos?.length&&!row.value.documents?.length){
+     if(pullEdits&&baseline&&canDownloadEdit(device,row.value,baseline)){
       const latestRemote=await revisionApi.read(row.itemId);
       if(!active||generation.current!==token)break;
       if(latestRemote&&latestRemote.revision===row.revision&&sameItem(latestRemote.value,row.value)){
