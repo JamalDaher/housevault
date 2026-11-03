@@ -15,13 +15,14 @@ export type PendingChange=
  */
 export function planPendingChange(input:{
  itemId:string;local:Item|null;baseline:SyncBaseline|null;
- remote:{revision:string;value:Item}|null;
+ remote:{revision:string;value:Item;deleted?:boolean}|null;
 }):PendingChange{
  const {itemId,local,baseline,remote}=input;
  if(!itemId.trim()||local&&local.id!==itemId||baseline&&baseline.value.id!==itemId||remote&&remote.value.id!==itemId)
   return {kind:"conflict",itemId,reason:"invalid-identity"};
  if([local,baseline?.value,remote?.value].some(value=>value&&hasAttachments(value)))
   return {kind:"conflict",itemId,reason:"attachments"};
+ if(remote?.deleted)return {kind:"conflict",itemId,reason:"remote-changed"};
  if(!baseline){
   if(!local)return {kind:"unchanged",itemId};
   return remote?{kind:"conflict",itemId,reason:"missing-baseline"}:{kind:"create",item:structuredClone(local)};
