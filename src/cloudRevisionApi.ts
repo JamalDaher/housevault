@@ -8,11 +8,15 @@ export type CloudRevisionClient<T>={
 
 export function createCloudRevisionApi<T>(client:CloudRevisionClient<T>,householdId:string){
  if(!householdId.trim())throw new Error("Household ID required");
- async function read(itemId:string):Promise<{revision:string;value:T}|null>{
+ async function readIncludingTombstone(itemId:string):Promise<{revision:string;value:T;deleted:boolean}|null>{
   if(!itemId.trim())throw new Error("Item ID required");
   const {data,error}=await client.from("inventory_revisions").select("item_id,payload,revision,deleted_at").eq("household_id",householdId).eq("item_id",itemId).maybeSingle();
   if(error)throw new Error("Could not read cloud inventory revision");
-  return data&&!data.deleted_at?{revision:data.revision,value:data.payload}:null;
+  return data?{revision:data.revision,value:data.payload,deleted:Boolean(data.deleted_at)}:null;
+ }
+ async function read(itemId:string):Promise<{revision:string;value:T}|null>{
+  const row=await readIncludingTombstone(itemId);
+  return row&&!row.deleted?{revision:row.revision,value:row.value}:null;
  }
  const write:RevisionTransport<T>=async input=>{
   const {data,error}=await client.rpc("write_inventory_revision",{p_household:householdId,p_item:input.itemId,p_expected:input.expectedRevision,p_payload:input.value});
@@ -26,5 +30,5 @@ export function createCloudRevisionApi<T>(client:CloudRevisionClient<T>,househol
   if(typeof data!=="string"||!data.trim())throw new Error("Cloud server returned no revision");
   return {status:"saved",revision:data,value:input.value} satisfies RevisionWriteResult<T>;
  };
- return {read,write};
+ return {read,readIncludingTombstone,write};
 }
