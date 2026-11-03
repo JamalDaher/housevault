@@ -113,6 +113,18 @@ describe("deferred retry reporting",()=>{
  });
 });
 
+
+ it("leaves other households untouched when the selected household fails",async()=>{
+  await enqueueSync("a","upsert",{name:"Home"},100,"home");
+  await enqueueSync("b","upsert",{name:"Other"},100,"other");
+  const result=await runSyncQueue(async()=>{throw new Error("Temporary outage");},{householdId:"home",now:()=>100});
+  expect(result).toEqual({sent:0,failed:1,remaining:true,stopped:"failed"});
+  const pending=await listPendingSync();
+  expect(pending).toHaveLength(2);
+  expect(pending.find(e=>e.householdId==="home")?.attempts).toBe(1);
+  expect(pending.find(e=>e.householdId==="other")?.attempts).toBe(0);
+  expect(pending.find(e=>e.householdId==="other")?.payload).toEqual({name:"Other"});
+ });
 describe("queue-to-transport integration",()=>{
  it("acknowledges a revision-guarded successful upload",async()=>{
   const item:Item={id:"a",name:"Hammer",category:"Tools",location:"Shop",quantity:1,value:10,notes:""};
