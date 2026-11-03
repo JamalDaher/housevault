@@ -168,4 +168,21 @@ describe("queue-to-transport integration",()=>{
   expect(pending[0].attempts).toBe(1);
  });
 
+ it("does not recreate an item deleted locally after it was queued",async()=>{
+  const queued:Item={id:"a",name:"Hammer",category:"Tools",location:"Shop",quantity:1,value:10,notes:""};
+  await enqueueSync("a","upsert",queued,100,"home");
+  let writes=0;
+  let baselines=0;
+  const transport=createSafeOfflineTransport({
+   householdId:"home",readLocal:async()=>null,readBaseline:async()=>null,readRemote:async()=>null,
+   write:async request=>{writes++;return {status:"saved" as const,revision:"r1",value:request.value};},
+   saveBaseline:async()=>{baselines++;}
+  });
+  const result=await runSyncQueue(transport,{householdId:"home",now:()=>100});
+  expect(result.stopped).toBe("failed");
+  expect(writes).toBe(0);
+  expect(baselines).toBe(0);
+  expect((await listPendingSync())[0].payload).toEqual(queued);
+ });
+
 });
