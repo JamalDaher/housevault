@@ -60,7 +60,7 @@ describe("opt-in sync runner",()=>{
   const claimed=await import("./syncQueue").then(q=>q.claimNextSync(100));
   await import("./syncQueue").then(q=>q.retrySync(claimed!.id,claimed!.leaseToken!,100));
   const result=await runSyncQueue(async()=>{throw new Error("Should not send before retry");},{now:()=>101});
-  expect(result).toEqual({sent:0,failed:0,remaining:true,stopped:"empty"});
+  expect(result).toEqual({sent:0,failed:0,remaining:true,stopped:"deferred"});
   expect(await listPendingSync()).toHaveLength(1);
  });
  it("derives clear UI status without triggering network requests",()=>{
