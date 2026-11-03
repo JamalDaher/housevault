@@ -29,7 +29,8 @@ export async function runSyncQueue(transport:SyncTransport,options:SyncRunnerOpt
    return {sent,failed,remaining:true,stopped:error instanceof CloudRevisionConflict?"conflict":"failed"};
   }
  }
- return {sent,failed,remaining:true,stopped:"limit"};
+ const remaining=(await listPendingSync()).some(entry=>options.householdId===undefined||entry.householdId===options.householdId);
+ return {sent,failed,remaining,stopped:remaining?"limit":"empty"};
 }
 export type SyncStatus = "offline"|"idle"|"pending"|"syncing"|"error";
 export function syncStatus(input:{online:boolean;pending:number;running:boolean;error:boolean}):SyncStatus{
