@@ -35,7 +35,7 @@ begin
  -- Serialize concurrent writers for the same household, including first creates.
  perform pg_advisory_xact_lock(hashtextextended(p_household::text||':'||p_item,0));
  select revision into v_revision from public.inventory_revisions where household_id=p_household and item_id=p_item;
- if v_revision is distinct from p_expected then raise exception 'Revision conflict' using errcode='40001';end if;
+ if v_revision is distinct from p_expected then raise exception 'Revision conflict' using errcode='HV001';end if;
  v_revision:=gen_random_uuid();
  insert into public.inventory_revisions(household_id,item_id,payload,revision,updated_at)
  values(p_household,p_item,p_payload,v_revision,now())
