@@ -17,14 +17,15 @@ export default function OfflineSyncControls({client,households}:{
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState("");
  const [autoQueue,setAutoQueue]=useState(false);
+ const validHousehold=Boolean(household&&households.some(h=>h.id===household));
  useEffect(()=>{
-  if(!autoQueue||!household||!households.some(h=>h.id===household))return;
+  if(!autoQueue||!validHousehold)return;
   let active=true,running=false;
   const scan=async()=>{if(!active||running)return;running=true;try{await queueTrackedHouseholdEdits(household);}catch{if(active)setMessage("Automatic local queue scan failed; no cloud upload was attempted.");}finally{running=false;}};
   void scan();
   const timer=setInterval(()=>void scan(),30_000);
   return()=>{active=false;clearInterval(timer);};
- },[autoQueue,household,households]);
+ },[autoQueue,household,validHousehold]);
  async function inspect(){
   if(!household||busy)return;
   setBusy(true);setMessage("");
