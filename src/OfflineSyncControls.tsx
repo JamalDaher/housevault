@@ -86,7 +86,7 @@ export default function OfflineSyncControls({client,households}:{
   <h3>Offline sync queue (beta)</h3>
   <p>Manual delivery only. Select a household to inspect its pending changes. Attachments and deletions are not uploaded here.</p>
   <label htmlFor="offline-sync-household">Destination household</label>
-  <select id="offline-sync-household" value={household} onChange={e=>{setAutoQueue(false);setHousehold(e.target.value);setMessage("");}}>
+  <select id="offline-sync-household" value={household} disabled={busy} onChange={e=>{setAutoQueue(false);setHousehold(e.target.value);setMessage("");}}>
    <option value="">Choose household</option>
    {households.map(h=><option key={h.id} value={h.id}>{h.name}</option>)}
   </select>
