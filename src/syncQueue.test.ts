@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, it } from "vitest";
-import { acknowledgeSync, claimNextSync, enqueueSync, listPendingSync, retrySync } from "./syncQueue";
+import { acknowledgeSync, claimNextSync, enqueueSync, listPendingSync, retrySync, refreshQueuedUpsert } from "./syncQueue";
 beforeEach(()=>{Object.defineProperty(globalThis,"indexedDB",{configurable:true,value:new IDBFactory()});});
 describe("durable sync outbox",()=>{
  it("persists queued changes across independent calls and keeps payload snapshots",async()=>{
@@ -51,5 +51,30 @@ describe("durable sync outbox",()=>{
   expect(reclaimed?.leaseToken).not.toBe(old?.leaseToken);
   expect(await acknowledgeSync(old!.id,old!.leaseToken!)).toBe(false);
   expect(await acknowledgeSync(reclaimed!.id,reclaimed!.leaseToken!)).toBe(true);
+ });
+});
+
+describe("queued edit refresh",()=>{
+ it("replaces one unleased snapshot without creating duplicate entries",async()=>{
+  await enqueueSync("a","upsert",{name:"Old"},100,"home");
+  expect(await refreshQueuedUpsert("home","a",{name:"New"},110)).toBe(true);
+  const entries=await listPendingSync();
+  expect(entries).toHaveLength(1);
+  expect(entries[0].payload).toEqual({name:"New"});
+  expect(entries[0].nextAttemptAt).toBe(110);
+ });
+ it("never changes another household or an actively leased entry",async()=>{
+  await enqueueSync("a","upsert",{name:"Other"},100,"other");
+  expect(await refreshQueuedUpsert("home","a",{name:"New"},110)).toBe(false);
+  await enqueueSync("a","upsert",{name:"Home"},100,"home");
+  const claimed=await claimNextSync(100,30000,"home");
+  expect(claimed).not.toBeNull();
+  expect(await refreshQueuedUpsert("home","a",{name:"New"},110)).toBe(false);
+  expect((await listPendingSync()).find(e=>e.householdId==="home")?.payload).toEqual({name:"Home"});
+ });
+ it("refuses ambiguous duplicates",async()=>{
+  await enqueueSync("a","upsert",{name:"One"},100,"home");
+  await enqueueSync("a","upsert",{name:"Two"},101,"home");
+  expect(await refreshQueuedUpsert("home","a",{name:"New"},110)).toBe(false);
  });
 });
