@@ -71,3 +71,18 @@ describe("opt-in sync runner",()=>{
   expect(syncStatus({online:true,pending:0,running:false,error:false})).toBe("idle");
  });
 });
+
+describe("sync batch completion status",()=>{
+ it("reports empty when the final entry exactly matches the batch limit",async()=>{
+  await enqueueSync("a","upsert",{name:"A"},100,"home");
+  const result=await runSyncQueue(async()=>undefined,{now:()=>100,householdId:"home",maxEntries:1});
+  expect(result).toEqual({sent:1,failed:0,remaining:false,stopped:"empty"});
+ });
+ it("reports remaining only for the selected household",async()=>{
+  await enqueueSync("a","upsert",{name:"A"},100,"home");
+  await enqueueSync("b","upsert",{name:"B"},100,"other");
+  const result=await runSyncQueue(async()=>undefined,{now:()=>100,householdId:"home",maxEntries:1});
+  expect(result.remaining).toBe(false);
+  expect(await listPendingSync()).toHaveLength(1);
+ });
+});
