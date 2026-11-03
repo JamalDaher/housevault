@@ -4,6 +4,8 @@ import { useEffect, useId, useState, type FormEvent, type ReactNode } from "reac
 import { createClient, type Session } from "@supabase/supabase-js";
 import SyncPreview from "./SyncPreview";
 import HouseholdTaxonomy from "./HouseholdTaxonomy";
+import CloudReadinessCheck from "./CloudReadinessCheck";
+import type {CloudReadinessDatabase} from "./cloudReadinessService";
 
 const url=import.meta.env.VITE_SUPABASE_URL;
 const key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -191,6 +193,7 @@ export default function CloudAccount({onImportCloudItem,onReplaceCloudItem}:{onI
     <div className="account-accept"><h4>Have an invitation?</h4><p>Sign in with the invited email, then enter the invitation ID.</p><form className="account-inline-form" onSubmit={e=>void acceptInvite(e)}><div><label htmlFor="accept-invite">Invitation ID</label><input id="accept-invite" required value={acceptId} onChange={e=>setAcceptId(e.target.value)} placeholder="Paste invitation ID"/></div><button type="submit" disabled={inviteBusy}>{inviteBusy?"Working…":"Accept invitation"}</button></form></div>{inviteMessage&&<p role="status" className="account-feedback">{inviteMessage}</p>}
    </div></AccountFold>
   </div>}
+  {client&&session&&households.length>0&&<AccountFold title="Cloud readiness"><CloudReadinessCheck client={client as unknown as CloudReadinessDatabase} userId={session.user.id} households={households}/></AccountFold>}
   <div className="account-privacy-note"><strong>Your inventory stays on this device</strong><p>Household access is ready, but inventory sharing, file uploads, and cloud synchronization aren't enabled. Signing in will not move or replace your local records.</p></div>
  </div>;
 }
