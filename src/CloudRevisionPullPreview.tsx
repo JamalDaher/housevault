@@ -1,7 +1,7 @@
 import {useState} from "react";
 type Household={id:string;name:string};
 type RevisionRow={item_id:string;revision:string;updated_at:string};
-type Client={from:(table:string)=>{select:(columns:string)=>{eq:(column:string,value:string)=>{order:(column:string,options:{ascending:boolean})=>Promise<{data:RevisionRow[]|null;error:{message:string}|null}>}}}}};
+type Client = { from: (table:string) => { select: (columns:string) => { eq: (column:string,value:string) => { order: (column:string,options:{ascending:boolean}) => Promise<{data:RevisionRow[]|null;error:{message:string}|null}> } } } };
 export default function CloudRevisionPullPreview({client,households}:{client:Client;households:Household[]}){
  const [householdId,setHouseholdId]=useState("");
  const [rows,setRows]=useState<RevisionRow[]>([]);
