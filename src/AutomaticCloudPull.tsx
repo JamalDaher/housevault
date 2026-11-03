@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState} from "react";
 import CloudRecovery from "./CloudRecovery";
+import {canCreateCloudCopy} from "./cloudCreateGuard";
 import {loadInventory} from "./indexedStorage";
 import {buildDeletionReview} from "./cloudDeletionReview";
 import {submitConfirmedTombstone} from "./cloudTombstoneApi";
@@ -128,6 +129,9 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem,
       const latest=(await loadInventory()).find(i=>i.id===item.id);
       if(!active||generation.current!==token)break;
       if(!latest||JSON.stringify(latest)!==JSON.stringify(item))continue;
+      const knownBaseline=await readSyncBaseline(household,item.id);
+      if(!active||generation.current!==token)break;
+      if(!canCreateCloudCopy(item,cloudIds.has(item.id),knownBaseline))continue;
       if(await api.read(item.id))continue;
       if(!active||generation.current!==token)break;
       if(!active||generation.current!==token)break;
