@@ -25,7 +25,8 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem}
   let active=true;
   const token=++generation.current;
   async function tick(){
-   if(inFlight.current||!active||navigator.onLine===false)return;
+   if(inFlight.current||!active)return;
+   if(navigator.onLine===false){setStatus("Offline — waiting for connection.");return;}
    inFlight.current=true;setBusy(true);
    try{
     const remote=await fetchCloudInventory(client,household);
@@ -71,8 +72,12 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem}
   void tick();
   const interval=window.setInterval(()=>void tick(),60000);
   const online=()=>void tick();
+  const focus=()=>void tick();
+  const visible=()=>{if(document.visibilityState==="visible")void tick();};
   window.addEventListener("online",online);
-  return()=>{active=false;generation.current++;window.clearInterval(interval);window.removeEventListener("online",online);};
+  window.addEventListener("focus",focus);
+  document.addEventListener("visibilitychange",visible);
+  return()=>{active=false;generation.current++;window.clearInterval(interval);window.removeEventListener("online",online);window.removeEventListener("focus",focus);document.removeEventListener("visibilitychange",visible);};
  },[client,household,enabled,uploadEnabled,householdKey]);
- return <section className="account-card"><h3>Automatic new-record transfers (beta)</h3><p className="account-helper">Opt in to check for new cloud records every minute while this app is open. Only attachment-free records missing on this device are imported. Existing records are never overwritten. Optional create-only uploads are available. Edits, deletions, and attachments are not synchronized, and this does not run when the app is closed.</p><label htmlFor="auto-pull-household">Household</label><select id="auto-pull-household" disabled={enabled||busy} value={household} onChange={e=>{setHousehold(e.target.value);setStatus("Disabled — no automatic changes.");setDivergent([]);}}><option value="">Select household</option>{households.filter(h=>h.name!=="HouseVault Sync Test").map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select><label><input type="checkbox" checked={enabled} disabled={!household} onChange={e=>{setEnabled(e.target.checked);if(!e.target.checked)setUploadEnabled(false);}}/> Enable automatic imports while app is open</label><label><input type="checkbox" checked={uploadEnabled} disabled={!enabled||busy} onChange={e=>{if(e.target.checked&&!window.confirm("Automatically create cloud copies of local-only attachment-free records while this app is open?"))return;setUploadEnabled(e.target.checked);}}/> Also upload new local-only records</label><p role="status">{busy?"Checking cloud…":status}</p>{divergent.length>0&&<div role="alert"><strong>{divergent.length} differing cloud/device records need review.</strong><p>Automatic transfer will not overwrite these records. Open Cloud transfer and compare to inspect them.</p><p>{divergent.slice(0,8).join(", ")}{divergent.length>8?"…":""}</p></div>}</section>;
+ return <section className="account-card"><h3>Automatic new-record transfers (beta)</h3><p className="account-helper">Opt in to check for new cloud records every minute while this app is open. Only attachment-free records missing on this device are imported. Existing records are never overwritten. Optional create-only uploads are available. Edits, deletions, and attachments are not synchronized, and this does not run when the app is closed.</p><label htmlFor="auto-pull-household">Household</label><select id="auto-pull-household" disabled={enabled||busy} value={household} onChange={e=>{setHousehold(e.target.value);setStatus("Disabled — no automatic changes.");setDivergent([]);}}><option value="">Select household</option>{households.filter(h=>h.name!=="HouseVault Sync Test").map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select><label><input type="checkbox" checked={enabled} disabled={!household} onChange={e=>{setEnabled(e.target.checked);if(!e.target.checked){setUploadEnabled(false);setDivergent([]);setStatus("Disabled — no automatic changes.");}}}/> Enable automatic imports while app is open</label><label><input type="checkbox" checked={uploadEnabled} disabled={!enabled||busy} onChange={e=>{if(e.target.checked&&!window.confirm("Automatically create cloud copies of local-only attachment-free records while this app is open?"))return;setUploadEnabled(e.target.checked);}}/> Also upload new local-only records</label><p role="status">{busy?"Checking cloud…":status}</p>{divergent.length>0&&<div role="alert"><strong>{divergent.length} differing cloud/device records need review.</strong><p>Automatic transfer will not overwrite these records. Open Cloud transfer and compare to inspect them.</p><p>{divergent.slice(0,8).join(", ")}{divergent.length>8?"…":""}</p></div>}</section>;
 }
