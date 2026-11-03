@@ -92,7 +92,7 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem,
     // A known revision with no local item may indicate deletion. Do not resurrect it.
     const eligible:typeof remote=[];
     const reviewBaselines=new Map<string,SyncBaseline>();
-    const missing:string[]=[];
+    const missing:{itemId:string;name:string}[]=[];
     for(const row of remote){
      if(!active||generation.current!==token)break;
      if(ids.has(row.itemId))continue;
