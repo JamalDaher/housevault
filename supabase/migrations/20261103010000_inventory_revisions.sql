@@ -12,6 +12,7 @@ create table if not exists public.inventory_revisions (
 alter table public.inventory_revisions enable row level security;
 revoke all on public.inventory_revisions from anon, authenticated;
 grant select on public.inventory_revisions to authenticated;
+drop policy if exists "read own household revisions" on public.inventory_revisions;
 create policy "read own household revisions" on public.inventory_revisions for select to authenticated
  using (
  exists(select 1 from public.households h where h.id=household_id and h.created_by=auth.uid())
