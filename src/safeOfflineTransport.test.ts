@@ -3,9 +3,10 @@ import {createSafeOfflineTransport} from "./safeOfflineTransport";
 import type {Item} from "./domain";
 import type {SyncEntry} from "./syncQueue";
 const item:Item={id:"a",name:"Hammer",category:"Tools",location:"Shop",quantity:1,value:10,notes:""};
-const entry:SyncEntry={id:"q",itemId:"a",operation:"upsert",payload:item,createdAt:1,attempts:0,nextAttemptAt:1,leaseUntil:0,leaseToken:null};
+const entry:SyncEntry={id:"q",itemId:"a",householdId:"home",operation:"upsert",payload:item,createdAt:1,attempts:0,nextAttemptAt:1,leaseUntil:0,leaseToken:null};
 function setup(overrides:Record<string,unknown>={}){
  const deps={
+  householdId:"home",
   readLocal:vi.fn(async()=>item),
   readBaseline:vi.fn(async()=>null),
   readRemote:vi.fn(async()=>null),
@@ -74,6 +75,12 @@ describe("safe offline queue transport",()=>{
    readRemote:async()=>({revision:"r1",value:item,deleted:true})
   });
   await expect(transport(entry)).rejects.toThrow();
+  expect(deps.write).not.toHaveBeenCalled();
+ });
+ it("refuses entries for another household or legacy unscoped entries",async()=>{
+  const {deps,transport}=setup();
+  await expect(transport({...entry,householdId:"other"})).rejects.toThrow("household");
+  await expect(transport({...entry,householdId:undefined})).rejects.toThrow("household");
   expect(deps.write).not.toHaveBeenCalled();
  });
  it("does not automatically delete",async()=>{
