@@ -35,6 +35,9 @@ export function createSafeOfflineTransport(deps:Dependencies){
    return;
   }
   if(decision.kind==="conflict"||decision.kind==="delete")throw new CloudRevisionConflict(remote?.revision??null,remote?.value??null);
+  // Recheck after remote reconciliation: the user may have edited or deleted the item meanwhile.
+  const latest=await deps.readLocal(entry.itemId);
+  if(!latest||!sameItem(latest,queued))throw new Error("Local inventory changed during cloud reconciliation");
   const saved=await saveWithRevision({
    itemId:entry.itemId,
    expectedRevision:decision.kind==="create"?null:decision.expectedRevision,
