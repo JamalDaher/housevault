@@ -129,3 +129,19 @@ describe("interrupted sync lease recovery",()=>{
   expect(await listPendingSync()).toHaveLength(0);
  });
 });
+
+describe("leased snapshot refresh safety",()=>{
+ it("refuses refresh during an active lease and permits it after a retry releases the lease",async()=>{
+  await enqueueSync("a","upsert",{name:"Old"},100,"home");
+  const claimed=await claimNextSync(100,30_000,"home");
+  expect(claimed).not.toBeNull();
+  expect(await refreshQueuedUpsert("home","a",{name:"New"},101)).toBe(false);
+  expect((await listPendingSync())[0].payload).toEqual({name:"Old"});
+  expect(await retrySync(claimed!.id,claimed!.leaseToken!,102)).toBe(true);
+  expect(await refreshQueuedUpsert("home","a",{name:"New"},103)).toBe(true);
+  const pending=await listPendingSync();
+  expect(pending[0].payload).toEqual({name:"New"});
+  expect(pending[0].attempts).toBe(0);
+  expect(pending[0].nextAttemptAt).toBe(103);
+ });
+});
