@@ -33,13 +33,14 @@ export async function listPendingSync():Promise<SyncEntry[]>{
  return transact("readonly",(store,resolve,reject)=>{const req=store.getAll();req.onsuccess=()=>resolve((req.result as SyncEntry[]).sort((a,b)=>a.createdAt-b.createdAt||a.id.localeCompare(b.id)));req.onerror=()=>reject(req.error??new Error("Unable to list sync queue"));});
 }
 /** Claims a single ready entry atomically across tabs; caller must retain the token. */
-export async function claimNextSync(now=Date.now(),leaseMs=30_000):Promise<SyncEntry|null>{
+export async function claimNextSync(now=Date.now(),leaseMs=30_000,householdId?:string):Promise<SyncEntry|null>{
  if(!Number.isFinite(leaseMs)||leaseMs<=0)throw new Error("Invalid lease");
+ if(householdId!==undefined&&!householdId.trim())throw new Error("Sync household ID required");
  return transact("readwrite",(store,resolve,reject)=>{
   const req=store.getAll();
   req.onerror=()=>reject(req.error??new Error("Unable to read sync queue"));
   req.onsuccess=()=>{
-   const ready=(req.result as SyncEntry[]).filter(e=>e.nextAttemptAt<=now&&e.leaseUntil<=now).sort((a,b)=>a.createdAt-b.createdAt||a.id.localeCompare(b.id))[0];
+   const ready=(req.result as SyncEntry[]).filter(e=>e.nextAttemptAt<=now&&e.leaseUntil<=now&&(householdId===undefined||e.householdId===householdId)).sort((a,b)=>a.createdAt-b.createdAt||a.id.localeCompare(b.id))[0];
    if(!ready){resolve(null);return;}
    const claimed={...ready,leaseUntil:now+leaseMs,leaseToken:crypto.randomUUID()};
    store.put(claimed);resolve(snapshot(claimed));
