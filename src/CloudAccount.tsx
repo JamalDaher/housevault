@@ -5,6 +5,7 @@ import { createClient, type Session } from "@supabase/supabase-js";
 import SyncPreview from "./SyncPreview";
 import HouseholdTaxonomy from "./HouseholdTaxonomy";
 import CloudReadinessCheck from "./CloudReadinessCheck";
+import CloudRevisionSmokeTest from "./CloudRevisionSmokeTest";
 import type {CloudReadinessDatabase} from "./cloudReadinessService";
 
 const url=import.meta.env.VITE_SUPABASE_URL;
@@ -194,6 +195,7 @@ export default function CloudAccount({onImportCloudItem,onReplaceCloudItem}:{onI
    </div></AccountFold>
   </div>}
   {client&&session&&households.length>0&&<AccountFold title="Cloud readiness"><CloudReadinessCheck client={client as unknown as CloudReadinessDatabase} userId={session.user.id} households={households}/></AccountFold>}
+  {client&&session&&<AccountFold title="Cloud write test"><CloudRevisionSmokeTest client={client as unknown as Parameters<typeof CloudRevisionSmokeTest>[0]["client"]} userId={session.user.id} households={households}/></AccountFold>}
   <div className="account-privacy-note"><strong>Your inventory stays on this device</strong><p>Household access is ready, but inventory sharing, file uploads, and cloud synchronization aren't enabled. Signing in will not move or replace your local records.</p></div>
  </div>;
 }
