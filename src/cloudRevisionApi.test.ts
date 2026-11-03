@@ -19,7 +19,7 @@ describe("cloud revision API",()=>{
  });
  it("returns remote data on a conflict instead of retrying writes",async()=>{
   let calls=0;
-  const api=createCloudRevisionApi(mock(async()=>{calls++;return {data:null,error:{code:"40001",message:"conflict"}};},{item_id:"item",payload:{name:"Other"},revision:"r3"}),"home");
+  const api=createCloudRevisionApi(mock(async()=>{calls++;return {data:null,error:{code:"HV001",message:"conflict"}};},{item_id:"item",payload:{name:"Other"},revision:"r3"}),"home");
   expect(await api.write({itemId:"item",expectedRevision:"r1",value:{name:"Local"}})).toEqual({status:"conflict",revision:"r3",remote:{name:"Other"}});
   expect(calls).toBe(1);
  });
