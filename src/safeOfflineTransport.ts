@@ -28,7 +28,7 @@ export function createSafeOfflineTransport(deps:Dependencies){
   if(!local||!sameItem(local,queued))throw new Error("Local inventory changed since queued edit");
   const decision=planPendingChange({itemId:entry.itemId,local,baseline,remote});
   if(decision.kind==="unchanged")return;
-  if(decision.kind==="conflict"||decision.kind==="delete")throw new CloudRevisionConflict("Queued change conflicts with current cloud inventory");
+  if(decision.kind==="conflict"||decision.kind==="delete")throw new CloudRevisionConflict(remote?.revision??null,remote?.value??null);
   const saved=await saveWithRevision({
    itemId:entry.itemId,
    expectedRevision:decision.kind==="create"?null:decision.expectedRevision,
