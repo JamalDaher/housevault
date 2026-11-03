@@ -2,7 +2,7 @@ import {useState} from "react";
 import {requestCloudRestore,eligibleRestore,type DeletedCloudRow} from "./cloudRestoreApi";
 
 type Client={
- from:(table:string)=>{select:(columns:string)=>{eq:(column:string,value:string)=>{limit:(count:number)=>Promise<{data:DeletedCloudRow[]|null;error:{message:string}|null}>}}};
+ from:(table:string)=>{select:(columns:string)=>{eq:(column:string,value:string)=>{limit:(count:number)=>Promise<{data:(Omit<DeletedCloudRow,"deleted_at">&{deleted_at?:string|null})[]|null;error:{message:string}|null}>}}};
  rpc:Parameters<typeof requestCloudRestore>[0]["rpc"];
 };
 export default function CloudRecovery({client,household}:{client:Client;household:string}){
@@ -15,7 +15,7 @@ export default function CloudRecovery({client,household}:{client:Client;househol
   try{
    const {data,error}=await client.from("inventory_revisions").select("item_id,revision,deleted_at,payload").eq("household_id",household).limit(1001);
    if(error||!data||data.length>1000)throw new Error("Could not safely list cloud records");
-   setRows(data.filter(row=>row.deleted_at&&eligibleRestore(row)&&!row.item_id.startsWith("__housevault_test_")));
+   setRows(data.filter(row=>row.deleted_at&&eligibleRestore({...row,deleted_at:row.deleted_at??null})&&!row.item_id.startsWith("__housevault_test_")).map(row=>({...row,deleted_at:row.deleted_at??null})));
    setStatus("Recovery list refreshed.");
   }catch{setStatus("Could not load deleted records.");}finally{setBusy(false);}
  }
@@ -26,8 +26,8 @@ export default function CloudRecovery({client,household}:{client:Client;househol
    const {data,error}=await client.from("inventory_revisions").select("item_id,revision,deleted_at,payload").eq("household_id",household).limit(1001);
    if(error||!data||data.length>1000)throw new Error("Could not verify restore candidate");
    const latest=data.find(item=>item.item_id===row.item_id);
-   if(!latest||latest.revision!==row.revision||!eligibleRestore(latest))throw new Error("Record changed; refresh first");
-   await requestCloudRestore(client,household,latest,true);
+   if(!latest||latest.revision!==row.revision||!eligibleRestore({...latest,deleted_at:latest.deleted_at??null}))throw new Error("Record changed; refresh first");
+   await requestCloudRestore(client,household,{...latest,deleted_at:latest.deleted_at??null},true);
    setRows(current=>current.filter(item=>item.item_id!==row.item_id));
    setStatus("Cloud record restored. Automatic import may retrieve it when enabled.");
   }catch(error){setStatus(error instanceof Error?error.message:"Restore failed");}finally{setBusy(false);}
