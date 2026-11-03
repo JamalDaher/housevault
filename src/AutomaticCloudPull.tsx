@@ -13,12 +13,13 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem}
  const [status,setStatus]=useState("Disabled — no automatic changes.");
  const [busy,setBusy]=useState(false);
  const [uploadEnabled,setUploadEnabled]=useState(false);
+ const [divergent,setDivergent]=useState<string[]>([]);
  const inFlight=useRef(false);
  const householdKey=households.map(h=>h.id).join("|");
  const importCallback=useRef(onImportCloudItem);
  importCallback.current=onImportCloudItem;
  const generation=useRef(0);
- useEffect(()=>{generation.current++;setEnabled(false);setUploadEnabled(false);setStatus("Disabled — no automatic changes.");},[client]);
+ useEffect(()=>{generation.current++;setEnabled(false);setUploadEnabled(false);setDivergent([]);setStatus("Disabled — no automatic changes.");},[client]);
  useEffect(()=>{
   if(!enabled||!households.some(h=>h.id===household))return;
   let active=true;
@@ -31,6 +32,9 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem}
     if(!active||generation.current!==token)return;
     const local=await loadInventory();
     const ids=new Set(local.map(i=>i.id));
+    const localById=new Map(local.map(i=>[i.id,i]));
+    const differences=remote.filter(r=>{const device=localById.get(r.itemId);return device&&JSON.stringify(device)!==JSON.stringify(r.value);}).map(r=>r.value.name);
+    if(active&&generation.current===token)setDivergent(differences);
     const eligible=remote.filter(r=>!ids.has(r.itemId)&&!r.value.photo&&!r.value.photos?.length&&!r.value.documents?.length);
     let imported=0;
     for(const row of eligible){
@@ -70,5 +74,5 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem}
   window.addEventListener("online",online);
   return()=>{active=false;generation.current++;window.clearInterval(interval);window.removeEventListener("online",online);};
  },[client,household,enabled,uploadEnabled,householdKey]);
- return <section className="account-card"><h3>Automatic new-record transfers (beta)</h3><p className="account-helper">Opt in to check for new cloud records every minute while this app is open. Only attachment-free records missing on this device are imported. Existing records are never overwritten. Optional create-only uploads are available. Edits, deletions, and attachments are not synchronized, and this does not run when the app is closed.</p><label htmlFor="auto-pull-household">Household</label><select id="auto-pull-household" disabled={enabled||busy} value={household} onChange={e=>{setHousehold(e.target.value);setStatus("Disabled — no automatic changes.");}}><option value="">Select household</option>{households.filter(h=>h.name!=="HouseVault Sync Test").map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select><label><input type="checkbox" checked={enabled} disabled={!household} onChange={e=>{setEnabled(e.target.checked);if(!e.target.checked)setUploadEnabled(false);}}/> Enable automatic imports while app is open</label><label><input type="checkbox" checked={uploadEnabled} disabled={!enabled||busy} onChange={e=>{if(e.target.checked&&!window.confirm("Automatically create cloud copies of local-only attachment-free records while this app is open?"))return;setUploadEnabled(e.target.checked);}}/> Also upload new local-only records</label><p role="status">{busy?"Checking cloud…":status}</p></section>;
+ return <section className="account-card"><h3>Automatic new-record transfers (beta)</h3><p className="account-helper">Opt in to check for new cloud records every minute while this app is open. Only attachment-free records missing on this device are imported. Existing records are never overwritten. Optional create-only uploads are available. Edits, deletions, and attachments are not synchronized, and this does not run when the app is closed.</p><label htmlFor="auto-pull-household">Household</label><select id="auto-pull-household" disabled={enabled||busy} value={household} onChange={e=>{setHousehold(e.target.value);setStatus("Disabled — no automatic changes.");setDivergent([]);}}><option value="">Select household</option>{households.filter(h=>h.name!=="HouseVault Sync Test").map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select><label><input type="checkbox" checked={enabled} disabled={!household} onChange={e=>{setEnabled(e.target.checked);if(!e.target.checked)setUploadEnabled(false);}}/> Enable automatic imports while app is open</label><label><input type="checkbox" checked={uploadEnabled} disabled={!enabled||busy} onChange={e=>{if(e.target.checked&&!window.confirm("Automatically create cloud copies of local-only attachment-free records while this app is open?"))return;setUploadEnabled(e.target.checked);}}/> Also upload new local-only records</label><p role="status">{busy?"Checking cloud…":status}</p>{divergent.length>0&&<div role="alert"><strong>{divergent.length} differing cloud/device records need review.</strong><p>Automatic transfer will not overwrite these records. Open Cloud transfer and compare to inspect them.</p><p>{divergent.slice(0,8).join(", ")}{divergent.length>8?"…":""}</p></div>}</section>;
 }
