@@ -19,6 +19,17 @@ describe("durable sync outbox",()=>{
   expect(await acknowledgeSync(winner!.id,winner!.leaseToken!)).toBe(true);
   expect(await listPendingSync()).toEqual([]);
  });
+ it("claims only selected household and leaves others untouched",async()=>{
+  await enqueueSync("a","upsert",{name:"A"},100,"home");
+  await enqueueSync("b","upsert",{name:"B"},100,"other");
+  await enqueueSync("c","upsert",{name:"C"},100);
+  const claimed=await claimNextSync(100,30000,"other");
+  expect(claimed?.itemId).toBe("b");
+  expect(await claimNextSync(100,30000,"other")).toBeNull();
+  expect((await listPendingSync()).length).toBe(3);
+  expect((await claimNextSync(100,30000,"home"))?.itemId).toBe("a");
+  expect((await claimNextSync(100,30000,"home"))).toBeNull();
+ });
  it("retries after exponential backoff without dropping data",async()=>{
   await enqueueSync("item-1","delete",null,100);
   const first=await claimNextSync(100);
