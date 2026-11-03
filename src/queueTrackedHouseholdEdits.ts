@@ -16,7 +16,13 @@ async function scanHousehold(householdId:string):Promise<number>{
  const eligible:Item[]=selectTrackedEdits({items:local,baselines,queuedIds:queued});
  let count=0;
  for(const item of eligible){
-  if(await enqueueUniqueHouseholdUpsert(householdId,item.id,item))count++;
+  // The inventory may have changed while baselines were being loaded.
+  const latest=(await loadInventory()).find(current=>current.id===item.id);
+  if(!latest)continue;
+  const baseline=await readSyncBaseline(householdId,item.id);
+  const safe=selectTrackedEdits({items:[latest],baselines:new Map([[item.id,baseline]]),queuedIds:new Set()});
+  if(safe.length!==1)continue;
+  if(await enqueueUniqueHouseholdUpsert(householdId,item.id,latest))count++;
  }
  return count;
 }
