@@ -86,3 +86,17 @@ describe("sync batch completion status",()=>{
   expect(await listPendingSync()).toHaveLength(1);
  });
 });
+
+describe("offline queue status",()=>{
+ it("does not claim pending household work when only another household has entries",async()=>{
+  await enqueueSync("other","upsert",{name:"Other"},100,"other");
+  const result=await runSyncQueue(async()=>{throw new Error("Must not send");},{online:()=>false,now:()=>100,householdId:"home"});
+  expect(result).toEqual({sent:0,failed:0,remaining:false,stopped:"offline"});
+ });
+ it("retains pending status when selected household is offline",async()=>{
+  await enqueueSync("home-item","upsert",{name:"Home"},100,"home");
+  const result=await runSyncQueue(async()=>{throw new Error("Must not send");},{online:()=>false,now:()=>100,householdId:"home"});
+  expect(result.remaining).toBe(true);
+  expect(await listPendingSync()).toHaveLength(1);
+ });
+});
