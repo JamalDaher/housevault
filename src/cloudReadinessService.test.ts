@@ -2,12 +2,12 @@ import {describe,expect,it} from "vitest";
 import {inspectHouseholdCloudReadiness,type CloudReadinessDatabase} from "./cloudReadinessService";
 const user="12345678-1234-1234-1234-123456789abc",house="87654321-4321-4321-4321-cba987654321";
 function database(owner:boolean,member:boolean,count:number|null=0):CloudReadinessDatabase{
- return {from:(table:string)=>({
+ return ({from:(table:string)=>({
   select:((columns:string,options?:{head:true;count:"exact"})=>{
    if(options)return {eq:async()=>({count,error:null})};
    return {eq:()=>({eq:()=>({maybeSingle:async()=>({data:table==="households"?(owner?{id:house}:null):(member?{household_id:house}:null),error:null})})})};
-  }) as CloudReadinessDatabase["from"] extends (table:string)=>infer T?T extends {select:infer S}?S:never:never
- })};
+  })
+ })}) as unknown as CloudReadinessDatabase;
 }
 describe("cloud readiness integration",()=>{
  it("allows authorized owners to inspect empty cloud storage",async()=>{
