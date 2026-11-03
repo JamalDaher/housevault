@@ -9,7 +9,7 @@ import {enqueueSync,listPendingSync} from "./syncQueue";
 import {syncSelectedHousehold} from "./syncSelectedHousehold";
 
 const item:Item={id:"test-adapter",name:"Old name",category:"Tools",location:"Shop",quantity:1,value:5,notes:""};
-beforeEach(()=>{Object.defineProperty(globalThis,"indexedDB",{configurable:true,value:new IDBFactory()});});
+beforeEach(()=>{Object.defineProperty(globalThis,"indexedDB",{configurable:true,value:new IDBFactory()});Object.defineProperty(globalThis,"window",{configurable:true,value:globalThis});Object.defineProperty(globalThis,"localStorage",{configurable:true,value:{getItem:()=>null}});});
 function client(remote:CloudRevisionRow<Item>,calls:{writes:number;expected:(string|null)[]}):CloudRevisionClient<Item>{
  return {
   from:()=>({select:()=>({eq:()=>({eq:()=>({maybeSingle:async()=>({data:remote,error:null})})})})}),
