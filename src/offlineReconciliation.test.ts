@@ -23,6 +23,10 @@ describe("offline reconciliation safety",()=>{
   expect(planPendingChange({itemId:"a",local:{...item,photo:"data:image/png;base64,abc"},baseline,remote}).kind).toBe("conflict");
   expect(planPendingChange({itemId:"b",local:item,baseline,remote}).kind).toBe("conflict");
  });
+ it("does not recreate tombstoned cloud items",()=>{
+  expect(planPendingChange({itemId:"a",local:item,baseline:null,remote:{...remote,deleted:true}}).kind).toBe("conflict");
+  expect(planPendingChange({itemId:"a",local:null,baseline,remote:{...remote,deleted:true}}).kind).toBe("conflict");
+ });
  it("leaves unchanged records alone",()=>{
   expect(planPendingChange({itemId:"a",local:item,baseline,remote}).kind).toBe("unchanged");
  });
