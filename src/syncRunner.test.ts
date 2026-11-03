@@ -100,3 +100,13 @@ describe("offline queue status",()=>{
   expect(await listPendingSync()).toHaveLength(1);
  });
 });
+
+describe("deferred retry reporting",()=>{
+ it("distinguishes a pending backoff entry from an empty queue",async()=>{
+  await enqueueSync("a","upsert",{name:"A"},100,"home");
+  const first=await runSyncQueue(async()=>{throw new Error("Temporary outage");},{now:()=>100,householdId:"home"});
+  expect(first.stopped).toBe("failed");
+  const second=await runSyncQueue(async()=>undefined,{now:()=>101,householdId:"home"});
+  expect(second).toEqual({sent:0,failed:0,remaining:true,stopped:"deferred"});
+ });
+});
