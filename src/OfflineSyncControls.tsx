@@ -38,7 +38,7 @@ export default function OfflineSyncControls({client,households}:{
   finally{setBusy(false);}
  }
  async function queueEdits(){
-  if(!household||busy)return;
+  if(!validHousehold||busy)return;
   setBusy(true);setMessage("");
   try{
    if(!window.confirm("Queue changed, previously synchronized inventory records for this household? No upload occurs until you select Send queued edits."))return;
@@ -48,7 +48,7 @@ export default function OfflineSyncControls({client,households}:{
   finally{setBusy(false);}
  }
  async function refreshEdits(){
-  if(!household||busy)return;
+  if(!validHousehold||busy)return;
   setBusy(true);setMessage("");
   try{
    const local=await loadInventory();
