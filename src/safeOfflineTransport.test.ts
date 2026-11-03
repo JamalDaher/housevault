@@ -59,6 +59,23 @@ describe("safe offline queue transport",()=>{
   await expect(transport({...entry,payload:withPhoto})).rejects.toThrow();
   expect(deps.write).not.toHaveBeenCalled();
  });
+ it("acknowledges already-synced queued snapshots without a duplicate write",async()=>{
+  const {deps,transport}=setup({
+   readBaseline:async()=>({revision:"r1",value:item}),
+   readRemote:async()=>({revision:"r1",value:item})
+  });
+  await transport(entry);
+  expect(deps.write).not.toHaveBeenCalled();
+  expect(deps.saveBaseline).not.toHaveBeenCalled();
+ });
+ it("refuses tombstoned records even if the payload matches",async()=>{
+  const {deps,transport}=setup({
+   readBaseline:async()=>({revision:"r1",value:item}),
+   readRemote:async()=>({revision:"r1",value:item,deleted:true})
+  });
+  await expect(transport(entry)).rejects.toThrow();
+  expect(deps.write).not.toHaveBeenCalled();
+ });
  it("does not automatically delete",async()=>{
   const {deps,transport}=setup();
   await expect(transport({...entry,operation:"delete"})).rejects.toThrow("explicit review");
