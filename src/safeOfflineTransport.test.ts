@@ -89,3 +89,19 @@ describe("safe offline queue transport",()=>{
   expect(deps.write).not.toHaveBeenCalled();
  });
 });
+
+describe("last-moment local state revalidation",()=>{
+ it("does not write if the item changes during remote lookup",async()=>{
+  let reads=0;
+  const {deps,transport}=setup({readLocal:vi.fn(async()=>++reads===1?item:{...item,name:"Changed during lookup"})});
+  await expect(transport(entry)).rejects.toThrow("changed during cloud reconciliation");
+  expect(deps.write).not.toHaveBeenCalled();
+  expect(deps.saveBaseline).not.toHaveBeenCalled();
+ });
+ it("does not write if the item is deleted during remote lookup",async()=>{
+  let reads=0;
+  const {deps,transport}=setup({readLocal:vi.fn(async()=>++reads===1?item:null)});
+  await expect(transport(entry)).rejects.toThrow("changed during cloud reconciliation");
+  expect(deps.write).not.toHaveBeenCalled();
+ });
+});
