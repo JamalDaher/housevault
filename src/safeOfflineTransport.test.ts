@@ -32,6 +32,33 @@ describe("safe offline queue transport",()=>{
   await expect(transport(entry)).rejects.toThrow();
   expect(deps.write).not.toHaveBeenCalled();
  });
+ it("uses baseline revision for safe edits",async()=>{
+  const updated={...item,name:"Updated"};
+  const {deps,transport}=setup({
+   readLocal:async()=>updated,
+   readBaseline:async()=>({revision:"r1",value:item}),
+   readRemote:async()=>({revision:"r1",value:item})
+  });
+  await transport({...entry,payload:updated});
+  expect(deps.write).toHaveBeenCalledWith({itemId:"a",expectedRevision:"r1",value:updated});
+ });
+ it("refuses cloud edits when the remote revision has changed",async()=>{
+  const updated={...item,name:"Updated"};
+  const {deps,transport}=setup({
+   readLocal:async()=>updated,
+   readBaseline:async()=>({revision:"r1",value:item}),
+   readRemote:async()=>({revision:"r2",value:item})
+  });
+  await expect(transport({...entry,payload:updated})).rejects.toThrow();
+  expect(deps.write).not.toHaveBeenCalled();
+  expect(deps.saveBaseline).not.toHaveBeenCalled();
+ });
+ it("rejects queued attachments",async()=>{
+  const withPhoto={...item,photo:"data:image/png;base64,YQ=="};
+  const {deps,transport}=setup({readLocal:async()=>withPhoto});
+  await expect(transport({...entry,payload:withPhoto})).rejects.toThrow();
+  expect(deps.write).not.toHaveBeenCalled();
+ });
  it("does not automatically delete",async()=>{
   const {deps,transport}=setup();
   await expect(transport({...entry,operation:"delete"})).rejects.toThrow("explicit review");
