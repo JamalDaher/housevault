@@ -114,6 +114,7 @@ describe("deferred retry reporting",()=>{
 });
 
 
+describe("queue-to-transport integration",()=>{
  it("leaves other households untouched when the selected household fails",async()=>{
   await enqueueSync("a","upsert",{name:"Home"},100,"home");
   await enqueueSync("b","upsert",{name:"Other"},100,"other");
@@ -125,7 +126,18 @@ describe("deferred retry reporting",()=>{
   expect(pending.find(e=>e.householdId==="other")?.attempts).toBe(0);
   expect(pending.find(e=>e.householdId==="other")?.payload).toEqual({name:"Other"});
  });
-describe("queue-to-transport integration",()=>{
+
+ it("processes only the selected household when another household has older entries",async()=>{
+  await enqueueSync("other-first","upsert",{name:"Other"},50,"other");
+  await enqueueSync("home-first","upsert",{name:"Home"},100,"home");
+  await enqueueSync("home-second","upsert",{name:"Home 2"},101,"home");
+  const sent:string[]=[];
+  const result=await runSyncQueue(async entry=>{sent.push(entry.itemId);},{householdId:"home",now:()=>200,maxEntries:1});
+  expect(result).toEqual({sent:1,failed:0,remaining:true,stopped:"limit"});
+  expect(sent).toEqual(["home-first"]);
+  expect((await listPendingSync()).map(entry=>entry.itemId).sort()).toEqual(["home-second","other-first"]);
+ });
+
  it("acknowledges a revision-guarded successful upload",async()=>{
   const item:Item={id:"a",name:"Hammer",category:"Tools",location:"Shop",quantity:1,value:10,notes:""};
   await enqueueSync("a","upsert",item,100,"home");
