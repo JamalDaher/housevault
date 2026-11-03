@@ -43,5 +43,5 @@ begin
  set payload=excluded.payload,revision=excluded.revision,updated_at=excluded.updated_at;
  return v_revision;
 end;$$;
-revoke all on function public.write_inventory_revision(uuid,text,uuid,jsonb) from public;
+revoke all on function public.write_inventory_revision(uuid,text,uuid,jsonb) from public, anon, authenticated;
 grant execute on function public.write_inventory_revision(uuid,text,uuid,jsonb) to authenticated;
