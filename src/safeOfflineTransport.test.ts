@@ -1,0 +1,40 @@
+import {describe,it,expect,vi} from "vitest";
+import {createSafeOfflineTransport} from "./safeOfflineTransport";
+import type {Item} from "./domain";
+import type {SyncEntry} from "./syncQueue";
+const item:Item={id:"a",name:"Hammer",category:"Tools",location:"Shop",quantity:1,value:10,notes:""};
+const entry:SyncEntry={id:"q",itemId:"a",operation:"upsert",payload:item,createdAt:1,attempts:0,nextAttemptAt:1,leaseUntil:0,leaseToken:null};
+function setup(overrides:Record<string,unknown>={}){
+ const deps={
+  readLocal:vi.fn(async()=>item),
+  readBaseline:vi.fn(async()=>null),
+  readRemote:vi.fn(async()=>null),
+  write:vi.fn(async()=>({status:"saved" as const,revision:"r2",value:item})),
+  saveBaseline:vi.fn(async()=>undefined),
+  ...overrides
+ };
+ return {deps,transport:createSafeOfflineTransport(deps)};
+}
+describe("safe offline queue transport",()=>{
+ it("writes new items with null revision and persists baseline",async()=>{
+  const {deps,transport}=setup();
+  await transport(entry);
+  expect(deps.write).toHaveBeenCalledWith({itemId:"a",expectedRevision:null,value:item});
+  expect(deps.saveBaseline).toHaveBeenCalledWith("a",{revision:"r2",value:item});
+ });
+ it("does not upload stale queued snapshots",async()=>{
+  const {deps,transport}=setup({readLocal:async()=>({...item,name:"Changed"})});
+  await expect(transport(entry)).rejects.toThrow("changed");
+  expect(deps.write).not.toHaveBeenCalled();
+ });
+ it("does not upload over a remote record without baseline",async()=>{
+  const {deps,transport}=setup({readRemote:async()=>({revision:"r1",value:item})});
+  await expect(transport(entry)).rejects.toThrow();
+  expect(deps.write).not.toHaveBeenCalled();
+ });
+ it("does not automatically delete",async()=>{
+  const {deps,transport}=setup();
+  await expect(transport({...entry,operation:"delete"})).rejects.toThrow("explicit review");
+  expect(deps.write).not.toHaveBeenCalled();
+ });
+});
