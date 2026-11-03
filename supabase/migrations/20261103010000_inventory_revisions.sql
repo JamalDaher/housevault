@@ -20,7 +20,7 @@ create policy "read own household revisions" on public.inventory_revisions for s
 -- Writes only through a server-side atomic compare-and-swap RPC.
 create or replace function public.write_inventory_revision(
  p_household uuid,p_item text,p_expected uuid,p_payload jsonb
-) returns uuid language plpgsql security definer set search_path=public as $$
+) returns uuid language plpgsql security definer set search_path = '' as $$
 declare v_role text;v_revision uuid;
 begin
  if auth.uid() is null then raise exception 'Authentication required';end if;
