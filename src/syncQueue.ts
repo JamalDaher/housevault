@@ -29,6 +29,21 @@ export async function enqueueSync(itemId:string,operation:SyncOperation,payload:
  const entry:SyncEntry={id:crypto.randomUUID(),itemId,householdId,operation,payload:snapshot(payload),createdAt:now,attempts:0,nextAttemptAt:now,leaseUntil:0,leaseToken:null};
  return transact("readwrite",(store,resolve)=>{store.add(entry);resolve(snapshot(entry));});
 }
+/** Atomically enqueue one item per household across browser tabs. */
+export async function enqueueUniqueHouseholdUpsert(householdId:string,itemId:string,payload:unknown,now=Date.now()):Promise<boolean>{
+ if(!householdId.trim()||!itemId.trim())throw new Error("Household and item IDs required");
+ const copied=snapshot(payload);
+ return transact("readwrite",(store,resolve,reject)=>{
+  const req=store.getAll();
+  req.onerror=()=>reject(req.error??new Error("Unable to inspect sync queue"));
+  req.onsuccess=()=>{
+   if((req.result as SyncEntry[]).some(e=>e.householdId===householdId&&e.itemId===itemId)){resolve(false);return;}
+   const entry:SyncEntry={id:crypto.randomUUID(),itemId,householdId,operation:"upsert",payload:copied,createdAt:now,attempts:0,nextAttemptAt:now,leaseUntil:0,leaseToken:null};
+   store.add(entry);
+   resolve(true);
+  };
+ });
+}
 export async function listPendingSync():Promise<SyncEntry[]>{
  return transact("readonly",(store,resolve,reject)=>{const req=store.getAll();req.onsuccess=()=>resolve((req.result as SyncEntry[]).sort((a,b)=>a.createdAt-b.createdAt||a.id.localeCompare(b.id)));req.onerror=()=>reject(req.error??new Error("Unable to list sync queue"));});
 }
