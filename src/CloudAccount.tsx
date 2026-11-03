@@ -201,7 +201,7 @@ export default function CloudAccount({onImportCloudItem,onReplaceCloudItem}:{onI
   {client&&session&&<AccountFold title="Cloud write test"><CloudRevisionSmokeTest client={client as unknown as Parameters<typeof CloudRevisionSmokeTest>[0]["client"]} userId={session.user.id} households={households}/></AccountFold>}
   {client&&session&&households.length>0&&<AccountFold title="Cloud revision preview"><CloudRevisionPullPreview client={client as unknown as Parameters<typeof CloudRevisionPullPreview>[0]["client"]} households={households}/></AccountFold>}
   {client&&session&&households.length>0&&<AccountFold title="Cloud transfer readiness"><CloudTransferCompare client={client as unknown as Parameters<typeof CloudTransferCompare>[0]["client"]} households={households} onImportCloudItem={onImportCloudItem}/></AccountFold>}
-  {client&&session&&households.length>0&&<AccountFold title="Automatic cloud imports (beta)"><AutomaticCloudPull client={client as unknown as Parameters<typeof AutomaticCloudPull>[0]["client"]} households={households} onImportCloudItem={onImportCloudItem}/></AccountFold>}
+  {client&&session&&households.length>0&&<AccountFold title="Automatic new-record transfers (beta)"><AutomaticCloudPull client={client as unknown as Parameters<typeof AutomaticCloudPull>[0]["client"]} households={households} onImportCloudItem={onImportCloudItem}/></AccountFold>}
   <div className="account-privacy-note"><strong>Your inventory stays on this device</strong><p>Household access is ready, but inventory sharing, file uploads, and cloud synchronization aren't enabled. Signing in will not move or replace your local records.</p></div>
  </div>;
 }
