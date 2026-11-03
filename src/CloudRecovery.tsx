@@ -9,6 +9,7 @@ export default function CloudRecovery({client,household}:{client:Client;househol
  const [rows,setRows]=useState<DeletedCloudRow[]>([]);
  const [status,setStatus]=useState("");
  const [busy,setBusy]=useState(false);
+ const [visibleCount,setVisibleCount]=useState(20);
  const active=useRef(true);
  useEffect(()=>{active.current=true;return()=>{active.current=false;};},[]);
  async function refresh(){
@@ -18,6 +19,7 @@ export default function CloudRecovery({client,household}:{client:Client;househol
    const {data,error}=await client.from("inventory_revisions").select("item_id,revision,deleted_at,payload").eq("household_id",household).limit(1001);
    if(error||!data||data.length>1000)throw new Error("Could not safely list cloud records");
    if(!active.current)return;
+   setVisibleCount(20);
    setRows(data.filter(row=>row.deleted_at&&eligibleRestore({...row,deleted_at:row.deleted_at??null})&&!row.item_id.startsWith("__housevault_test_")).map(row=>({...row,deleted_at:row.deleted_at??null})));
    setStatus("Recovery list refreshed.");
   }catch{if(active.current)setStatus("Could not load deleted records.");}finally{if(active.current)setBusy(false);}
@@ -37,5 +39,5 @@ export default function CloudRecovery({client,household}:{client:Client;househol
    setStatus("Cloud record restored. Automatic import may retrieve it when enabled.");
   }catch(error){if(active.current)setStatus(error instanceof Error?error.message:"Restore failed");}finally{if(active.current)setBusy(false);}
  }
- return <div className="account-card"><h4>Recover deleted cloud inventory</h4><p>Restoring makes retained records visible in cloud inventory again. No local records are overwritten.</p><button type="button" disabled={!household||busy} onClick={()=>void refresh()}>Find deleted records</button><p role="status">{status}</p><ul>{rows.slice(0,20).map(row=><li key={row.item_id}>{row.payload.name} <button type="button" disabled={busy} onClick={()=>void restore(row)}>Restore cloud copy</button></li>)}</ul>{rows.length>20&&<p>Showing first 20 records.</p>}</div>;
+ return <div className="account-card"><h4>Recover deleted cloud inventory</h4><p>Restoring makes retained records visible in cloud inventory again. No local records are overwritten.</p><button type="button" disabled={!household||busy} onClick={()=>void refresh()}>Find deleted records</button><p role="status">{status}</p><ul>{rows.slice(0,visibleCount).map(row=><li key={row.item_id}>{row.payload.name} <button type="button" disabled={busy} onClick={()=>void restore(row)}>Restore cloud copy</button></li>)}</ul>{rows.length>visibleCount&&<button type="button" disabled={busy} onClick={()=>setVisibleCount(count=>Math.min(count+20,rows.length))}>Show 20 more ({rows.length-visibleCount} remaining)</button>}</div>;
 }
