@@ -1,6 +1,6 @@
 /** Offline-first outbox. No network requests are made by this module. */
 export type SyncOperation = "upsert" | "delete";
-export type SyncEntry = { id:string; itemId:string; operation:SyncOperation; payload:unknown; createdAt:number; attempts:number; nextAttemptAt:number; leaseUntil:number; leaseToken:string|null };
+export type SyncEntry = { id:string; itemId:string; householdId?:string; operation:SyncOperation; payload:unknown; createdAt:number; attempts:number; nextAttemptAt:number; leaseUntil:number; leaseToken:string|null };
 const DB="housevault-sync-outbox", STORE="pending", VERSION=1;
 const open=()=>new Promise<IDBDatabase>((resolve,reject)=>{
  const request=indexedDB.open(DB,VERSION);
@@ -23,9 +23,10 @@ async function transact<T>(mode:IDBTransactionMode,work:(store:IDBObjectStore,re
  });}finally{db.close();}
 }
 const snapshot=<T>(value:T):T=>structuredClone(value);
-export async function enqueueSync(itemId:string,operation:SyncOperation,payload:unknown,now=Date.now()):Promise<SyncEntry>{
+export async function enqueueSync(itemId:string,operation:SyncOperation,payload:unknown,now=Date.now(),householdId?:string):Promise<SyncEntry>{
  if(!itemId.trim())throw new Error("Sync item ID required");
- const entry:SyncEntry={id:crypto.randomUUID(),itemId,operation,payload:snapshot(payload),createdAt:now,attempts:0,nextAttemptAt:now,leaseUntil:0,leaseToken:null};
+ if(householdId!==undefined&&!householdId.trim())throw new Error("Sync household ID required");
+ const entry:SyncEntry={id:crypto.randomUUID(),itemId,householdId,operation,payload:snapshot(payload),createdAt:now,attempts:0,nextAttemptAt:now,leaseUntil:0,leaseToken:null};
  return transact("readwrite",(store,resolve)=>{store.add(entry);resolve(snapshot(entry));});
 }
 export async function listPendingSync():Promise<SyncEntry[]>{
