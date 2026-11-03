@@ -27,7 +27,7 @@ export default function OfflineSyncControls({client,households}:{
   return()=>{active=false;clearInterval(timer);};
  },[autoQueue,household,validHousehold]);
  async function inspect(){
-  if(!household||busy)return;
+  if(!validHousehold||busy)return;
   setBusy(true);setMessage("");
   try{
    const entries=await listPendingSync();
@@ -72,7 +72,7 @@ export default function OfflineSyncControls({client,households}:{
   finally{setBusy(false);}
  }
  async function send(){
-  if(!household||!households.some(h=>h.id===household)||busy)return;
+  if(!validHousehold||busy)return;
   if(!window.confirm("Send queued attachment-free edits to this household? Conflicts will be preserved for review. No deletions will be sent."))return;
   setBusy(true);setMessage("");
   try{
@@ -90,11 +90,11 @@ export default function OfflineSyncControls({client,households}:{
    <option value="">Choose household</option>
    {households.map(h=><option key={h.id} value={h.id}>{h.name}</option>)}
   </select>
-  <label><input type="checkbox" checked={autoQueue} disabled={!household||busy} onChange={e=>setAutoQueue(e.target.checked)}/> Automatically queue tracked edits on this device while this account page is open (no automatic upload)</label>
-  <button type="button" disabled={!household||busy} onClick={()=>void queueEdits()}>Queue tracked local edits</button>
-  <button type="button" disabled={!household||busy} onClick={()=>void inspect()}>Inspect queue</button>
-  <button type="button" disabled={!household||busy} onClick={()=>void refreshEdits()}>Refresh queued edits</button>
-  <button type="button" disabled={!household||busy} onClick={()=>void send()}>{busy?"Sending…":"Send queued edits"}</button>
+  <label><input type="checkbox" checked={autoQueue} disabled={!validHousehold||busy} onChange={e=>setAutoQueue(e.target.checked)}/> Automatically queue tracked edits on this device while this account page is open (no automatic upload)</label>
+  <button type="button" disabled={!validHousehold||busy} onClick={()=>void queueEdits()}>Queue tracked local edits</button>
+  <button type="button" disabled={!validHousehold||busy} onClick={()=>void inspect()}>Inspect queue</button>
+  <button type="button" disabled={!validHousehold||busy} onClick={()=>void refreshEdits()}>Refresh queued edits</button>
+  <button type="button" disabled={!validHousehold||busy} onClick={()=>void send()}>{busy?"Sending…":"Send queued edits"}</button>
   {message&&<p role="status">{message}</p>}
  </div>;
 }
