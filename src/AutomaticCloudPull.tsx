@@ -1,20 +1,23 @@
 import {useEffect,useRef,useState} from "react";
 import {loadInventory} from "./indexedStorage";
-import {fetchCloudInventory} from "./cloudInventoryTransfer";
+import {fetchCloudInventory,uploadNewCloudItem} from "./cloudInventoryTransfer";
+import {createCloudRevisionApi} from "./cloudRevisionApi";
+import {CloudRevisionConflict} from "./syncRevision";
 import type {Item} from "./domain";
 
-type Client=Parameters<typeof fetchCloudInventory>[0];
+type Client=Parameters<typeof fetchCloudInventory>[0]&Parameters<typeof createCloudRevisionApi<Item>>[0];
 type Household={id:string;name:string};
 export default function AutomaticCloudPull({client,households,onImportCloudItem}:{client:Client;households:Household[];onImportCloudItem:(item:Item)=>Promise<void>}){
  const [household,setHousehold]=useState("");
  const [enabled,setEnabled]=useState(false);
  const [status,setStatus]=useState("Disabled — no automatic changes.");
  const [busy,setBusy]=useState(false);
+ const [uploadEnabled,setUploadEnabled]=useState(false);
  const inFlight=useRef(false);
  const importCallback=useRef(onImportCloudItem);
  importCallback.current=onImportCloudItem;
  const generation=useRef(0);
- useEffect(()=>{generation.current++;setEnabled(false);setStatus("Disabled — no automatic changes.");},[client]);
+ useEffect(()=>{generation.current++;setEnabled(false);setUploadEnabled(false);setStatus("Disabled — no automatic changes.");},[client]);
  useEffect(()=>{
   if(!enabled||!households.some(h=>h.id===household))return;
   let active=true;
@@ -36,7 +39,20 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem}
      await importCallback.current(structuredClone(row.value));
      imported++;
     }
-    if(active&&generation.current===token)setStatus(imported?"Imported "+imported+" new cloud records. Existing records preserved.":"Checked cloud: no new attachment-free records.");
+    let uploaded=0;
+    if(uploadEnabled&&active&&generation.current===token){
+     const cloudIds=new Set(remote.map(r=>r.itemId));
+     const api=createCloudRevisionApi<Item>(client,household);
+     for(const item of local.filter(i=>!i.id.startsWith("demo-")&&!i.id.startsWith("__housevault_test_")&&!cloudIds.has(i.id)&&!i.photo&&!i.photos?.length&&!i.documents?.length)){
+      if(!active||generation.current!==token)break;
+      const latest=(await loadInventory()).find(i=>i.id===item.id);
+      if(!latest||JSON.stringify(latest)!==JSON.stringify(item))continue;
+      if(await api.read(item.id))continue;
+      try{await uploadNewCloudItem(item,api.write);uploaded++;}
+      catch(error){if(error instanceof CloudRevisionConflict)continue;throw error;}
+     }
+    }
+    if(active&&generation.current===token)setStatus("Cloud check complete: "+imported+" imported, "+uploaded+" newly uploaded. Existing records preserved.");
    }catch{
     if(active&&generation.current===token)setStatus("Cloud check failed. No existing records were replaced; will retry while enabled.");
    }finally{inFlight.current=false;if(active&&generation.current===token)setBusy(false);}
@@ -46,6 +62,6 @@ export default function AutomaticCloudPull({client,households,onImportCloudItem}
   const online=()=>void tick();
   window.addEventListener("online",online);
   return()=>{active=false;generation.current++;window.clearInterval(interval);window.removeEventListener("online",online);};
- },[client,household,enabled,households]);
- return <section className="account-card"><h3>Automatic cloud-only imports (beta)</h3><p className="account-helper">Opt in to check for new cloud records every minute while this app is open. Only attachment-free records missing on this device are imported. Existing records are never overwritten. This does not upload edits, synchronize deletions, or run when the app is closed.</p><label htmlFor="auto-pull-household">Household</label><select id="auto-pull-household" disabled={enabled||busy} value={household} onChange={e=>{setHousehold(e.target.value);setStatus("Disabled — no automatic changes.");}}><option value="">Select household</option>{households.filter(h=>h.name!=="HouseVault Sync Test").map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select><label><input type="checkbox" checked={enabled} disabled={!household} onChange={e=>setEnabled(e.target.checked)}/> Enable automatic imports while app is open</label><p role="status">{busy?"Checking cloud…":status}</p></section>;
+ },[client,household,enabled,uploadEnabled,households]);
+ return <section className="account-card"><h3>Automatic cloud-only imports (beta)</h3><p className="account-helper">Opt in to check for new cloud records every minute while this app is open. Only attachment-free records missing on this device are imported. Existing records are never overwritten. Optional create-only uploads are available. Edits, deletions, and attachments are not synchronized, and this does not run when the app is closed.</p><label htmlFor="auto-pull-household">Household</label><select id="auto-pull-household" disabled={enabled||busy} value={household} onChange={e=>{setHousehold(e.target.value);setStatus("Disabled — no automatic changes.");}}><option value="">Select household</option>{households.filter(h=>h.name!=="HouseVault Sync Test").map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select><label><input type="checkbox" checked={enabled} disabled={!household} onChange={e=>{setEnabled(e.target.checked);if(!e.target.checked)setUploadEnabled(false);}}/> Enable automatic imports while app is open</label><label><input type="checkbox" checked={uploadEnabled} disabled={!enabled||busy} onChange={e=>{if(e.target.checked&&!window.confirm("Automatically create cloud copies of local-only attachment-free records while this app is open?"))return;setUploadEnabled(e.target.checked);}}/> Also upload new local-only records</label><p role="status">{busy?"Checking cloud…":status}</p></section>;
 }
