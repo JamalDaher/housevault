@@ -1,11 +1,12 @@
-import {useState} from "react";
+import {useEffect,useState} from "react";
 import type {Item} from "./domain";
 import type {CloudRevisionClient} from "./cloudRevisionApi";
-import {listPendingSync,enqueueSync,refreshQueuedUpsert} from "./syncQueue";
+import {listPendingSync,refreshQueuedUpsert} from "./syncQueue";
 import {syncSelectedHousehold} from "./syncSelectedHousehold";
 import {loadInventory} from "./indexedStorage";
 import {readSyncBaseline} from "./syncBaselines";
 import {selectTrackedEdits} from "./selectTrackedEdits";
+import {queueTrackedHouseholdEdits} from "./queueTrackedHouseholdEdits";
 
 /** Manual-only queued edit delivery. No automatic upload or delete. */
 export default function OfflineSyncControls({client,households}:{
@@ -15,6 +16,15 @@ export default function OfflineSyncControls({client,households}:{
  const [household,setHousehold]=useState("");
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState("");
+ const [autoQueue,setAutoQueue]=useState(false);
+ useEffect(()=>{
+  if(!autoQueue||!household||!households.some(h=>h.id===household))return;
+  let active=true,running=false;
+  const scan=async()=>{if(!active||running)return;running=true;try{await queueTrackedHouseholdEdits(household);}catch{if(active)setMessage("Automatic local queue scan failed; no cloud upload was attempted.");}finally{running=false;}};
+  void scan();
+  const timer=setInterval(()=>void scan(),30_000);
+  return()=>{active=false;clearInterval(timer);};
+ },[autoQueue,household,households]);
  async function inspect(){
   const entries=await listPendingSync();
   const matching=entries.filter(entry=>entry.householdId===household);
@@ -25,16 +35,9 @@ export default function OfflineSyncControls({client,households}:{
   if(!household||busy)return;
   setBusy(true);setMessage("");
   try{
-   const local=await loadInventory();
-   const pending=await listPendingSync();
-   const queued=new Set(pending.filter(e=>e.householdId===household).map(e=>e.itemId));
-   const baselines=new Map<string,Awaited<ReturnType<typeof readSyncBaseline>>>();
-   for(const item of local)baselines.set(item.id,await readSyncBaseline(household,item.id));
-   const eligible=selectTrackedEdits({items:local,baselines,queuedIds:queued});
-   if(!eligible.length){setMessage("No eligible tracked edits to queue. New items, attachments and deletions are excluded.");return;}
-   if(!window.confirm("Queue "+eligible.length+" tracked inventory edits for this household? No network upload occurs until you select Send queued edits."))return;
-   for(const item of eligible)await enqueueSync(item.id,"upsert",item,Date.now(),household);
-   setMessage(eligible.length+" tracked edits saved to the offline queue. Review before sending.");
+   if(!window.confirm("Queue changed, previously synchronized inventory records for this household? No upload occurs until you select Send queued edits."))return;
+   const count=await queueTrackedHouseholdEdits(household);
+   setMessage(count+" tracked edits queued locally. New items, attachments and deletions are excluded.");
   }catch{setMessage("Could not prepare offline edits. No cloud changes were sent.");}
   finally{setBusy(false);}
  }
@@ -76,10 +79,11 @@ export default function OfflineSyncControls({client,households}:{
   <h3>Offline sync queue (beta)</h3>
   <p>Manual delivery only. Select a household to inspect its pending changes. Attachments and deletions are not uploaded here.</p>
   <label htmlFor="offline-sync-household">Destination household</label>
-  <select id="offline-sync-household" value={household} onChange={e=>{setHousehold(e.target.value);setMessage("");}}>
+  <select id="offline-sync-household" value={household} onChange={e=>{setAutoQueue(false);setHousehold(e.target.value);setMessage("");}}>
    <option value="">Choose household</option>
    {households.map(h=><option key={h.id} value={h.id}>{h.name}</option>)}
   </select>
+  <label><input type="checkbox" checked={autoQueue} disabled={!household||busy} onChange={e=>setAutoQueue(e.target.checked)}/> Automatically queue tracked edits on this device while this account page is open (no automatic upload)</label>
   <button type="button" disabled={!household||busy} onClick={()=>void queueEdits()}>Queue tracked local edits</button>
   <button type="button" disabled={!household||busy} onClick={()=>void inspect()}>Inspect queue</button>
   <button type="button" disabled={!household||busy} onClick={()=>void refreshEdits()}>Refresh queued edits</button>
