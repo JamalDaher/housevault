@@ -112,3 +112,20 @@ describe("household outbox lifecycle",()=>{
   expect((await listPendingSync()).map(e=>e.householdId).sort()).toEqual(["home-a","home-b"]);
  });
 });
+
+describe("interrupted sync lease recovery",()=>{
+ it("reclaims an expired lease and rejects acknowledgement from the old owner",async()=>{
+  await enqueueSync("a","upsert",{name:"Hammer"},100,"home");
+  const first=await claimNextSync(100,30_000,"home");
+  expect(first).not.toBeNull();
+  expect(await claimNextSync(30_099,30_000,"home")).toBeNull();
+  const second=await claimNextSync(30_100,30_000,"home");
+  expect(second).not.toBeNull();
+  expect(second!.id).toBe(first!.id);
+  expect(second!.leaseToken).not.toBe(first!.leaseToken);
+  expect(await acknowledgeSync(first!.id,first!.leaseToken!)).toBe(false);
+  expect(await listPendingSync()).toHaveLength(1);
+  expect(await acknowledgeSync(second!.id,second!.leaseToken!)).toBe(true);
+  expect(await listPendingSync()).toHaveLength(0);
+ });
+});
