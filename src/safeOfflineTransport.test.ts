@@ -105,3 +105,24 @@ describe("last-moment local state revalidation",()=>{
   expect(deps.write).not.toHaveBeenCalled();
  });
 });
+
+describe("cloud write race protection",()=>{
+ it("does not advance the trusted baseline when cloud CAS rejects a concurrent edit",async()=>{
+  const updated={...item,name:"Edited locally"};
+  const {deps,transport}=setup({
+   readLocal:async()=>updated,
+   readBaseline:async()=>({revision:"r1",value:item}),
+   readRemote:async()=>({revision:"r1",value:item}),
+   write:vi.fn(async()=>({status:"conflict" as const,revision:"r2",value:{...item,name:"Edited elsewhere"}}))
+  });
+  await expect(transport({...entry,payload:updated})).rejects.toThrow();
+  expect(deps.write).toHaveBeenCalledTimes(1);
+  expect(deps.saveBaseline).not.toHaveBeenCalled();
+ });
+ it("refuses to write when the queued item disappears before the final local read",async()=>{
+  let reads=0;
+  const {deps,transport}=setup({readLocal:vi.fn(async()=>++reads===1?item:null)});
+  await expect(transport(entry)).rejects.toThrow("changed during cloud reconciliation");
+  expect(deps.write).not.toHaveBeenCalled();
+ });
+});
